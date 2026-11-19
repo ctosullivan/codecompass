@@ -1438,3 +1438,354 @@ check list) — it does not, and is not meant to, make any determination
 about Stage 89B, Stage 89C, or Phase 89's own overall `done` status, all
 of which remain correctly unstarted/not-done per `planning/ROADMAP.md`
 and `planning/CONTEXT.md`.
+
+---
+
+# Third independent audit — Phase 89 Stage 89A, both corrective passes, final committed state
+
+**Audited commit:** `61591f416c8cfe067a524a7f943e21162ab09e4f` ("fix(phase-89-stage-89a): second corrective pass -- Claim-scope eligibility, manifest collision safety"), confirmed via `git log -1` at the start of this audit and re-confirmed via a disposable `git worktree add <scratch> 61591f4 --detach` used for all clean-room re-verification below.
+**Auditor:** `release-phase-auditor` (independent, read-only pass; never the implementer).
+**Scope:** Both corrective passes (`decisions/0097`, `decisions/0098`) against their own final, committed source — not a re-litigation of the original Stage 89A implementation or the two prior audit sections above, which stand unchanged.
+
+## Verdict
+
+**FAIL.**
+
+The underlying mechanism this stage and both corrective passes implement is sound — every one of the five dispatched verification areas (A–E) was independently reproduced against real Ledgerkit records and real on-disk state, with results listed below, and nothing in that reproduction contradicts the prior two audit sections' own PASS/PASS-WITH-OBSERVATIONS verdicts for the code at `61591f4` itself. The FAIL is **not** a finding against that code's correctness. It is two confirmed process/completeness gaps against the exact commit this audit was asked to evaluate as "about to be closed," plus one serious, must-report repository-integrity observation discovered mid-audit:
+
+1. **The phase retro (`planning/retros/phase-89-stage-89a.md`) was never updated for the second corrective pass at all**, and remains structurally incomplete against `planning/retros/TEMPLATE.md` even for the original work. This is a direct `CLAUDE.md` §5 DoD gap, not a style nit (detail below).
+2. **Two confirmed candidate learnings from this stage (`L-135`, `L-136`) remain untriaged** (`status: candidate` in `planning/learnings/inbox.md`, no `promoted_to`), and neither corrective pass (`decisions/0097`/`0098`) — despite each fixing multiple material defects an independent audit's own checklist had not been scoped to probe for — filed any candidate learning of its own at all. `CLAUDE.md` §5 requires triage of "candidate learnings from the phase... including any surfaced by the retro" before done.
+3. **Confirmed stale "staged but not yet committed" language**, now factually false since `61591f4` has landed, in `CHANGELOG.md` (the second-corrective-pass entry's closing sentence), `planning/ROADMAP.md` (the Phase 89 row's status column and its "Audited against the staged-but-uncommitted working tree" sentence), `planning/CONTEXT.md` ("The implementation... is staged (`git add`) but **not yet committed**..." plus its "Next concrete step" manual-commit instructions), and this very audit file's own second-corrective-pass section (two occurrences, left as written per this file's append-only convention — noted here, not edited there). **Not fixed by this auditor** (read-only); the lead must correct all four.
+4. **A serious, separately-reportable repository-integrity observation, not a finding against `61591f4` itself**: partway through this audit, `git status --porcelain` in the live `codecompass` working tree (not a scratch copy) began showing uncommitted modifications to `src/codecompass/cli.py`, `src/codecompass/knowledge_api.py`, `src/codecompass/source_reconciliation.py`, and `tests/test_knowledge_api.py` that had not been present at the audit's own start (file mtimes 2026-11-19 20:31:13–20:39:17, i.e. appearing *during* this dispatch). `git diff` confirms these implement exactly Stage 89B's own named deliverable — the `claim_contradicted_by_fresh_check` `Gap` kind and `source_reconciliation.pending_contradicting_findings` (plan §5.4), wired live into `knowledge_api.find_gaps`/`_find_gaps_for_slug_contract`, plus 233 new lines of tests in `tests/test_knowledge_api.py`. **The committed state at `61591f4` itself does not contain any of this** — confirmed directly via `git show 61591f4:<path>` for all four files, and via the committed line counts (`source_reconciliation.py` 1149 lines at `61591f4` vs. 1305 in the live working tree) — so the specific question "does the audited commit implement Stage 89B" is answered **NO**, exactly as required. But the *live repository*, as of this audit, is no longer in the state `61591f4` alone describes, and appears to be mid-edit by a concurrent process this auditor did not start and has not touched (confirmed: this auditor's own tool use was Read-only on these four files plus read-only `Bash`/`grep`; no `Write`/`Edit` call was made against any path under `/home/cormac/projects/codecompass` by this auditor at any point). This is reported precisely so the lead can establish what produced it and ensure it is not accidentally committed, bundled, or lost before Stage 89B is actually authorised and planned.
+
+## Evidence for the governing verdict questions (A–E), independently reproduced
+
+All reproductions below were run against disposable scratch copies (`cp -r ~/projects/ledgerkit <scratch>/ledgerkit`, never a clone; disposable copies of `planning/knowledge/balance-from-spec/` and `planning/contracts/balance-from-spec/` under the same scratch root) via the real CLI (`/home/cormac/projects/codecompass/.venv/bin/codecompass knowledge ...` with `--repo-root <scratch>/ledgerkit`), plus one direct, scoped, frozen-`datetime` Python invocation of `source_reconciliation.write_source_reconciliation_manifest` for the collision case (same technique the existing unit tests use, run independently against the real `balance-from-spec` record shapes rather than synthetic fixtures). The real `~/projects/ledgerkit` checkout and the real `codecompass` knowledge base (`planning/knowledge/balance-from-spec/`, `planning/contracts/balance-from-spec/`) were confirmed clean (`git status --porcelain`) both before and after every exercise below; `~/projects/ledgerkit` remained pinned at `a7740fd04fe1814d2a557bfcb67a9a775a4a22f9` throughout.
+
+**A — Claim-scope correctness.** Read `CL-BFS-001`–`005`, `REQ-BFS-001`/`002`, `EV-BFS-001`–`003`, `oracle-contract.yaml` directly first. `knowledge_intermediate.claim_scope_category` (lines 2611–2664) reads only `claim.fields.get("status")`/`.get("depends_on")` plus the caller-supplied `bridging_check_ids` set — confirmed via direct `grep` that no record-id string (no `"BFS"`, no `"CL-"` literal) appears anywhere in the function; it is genuinely general. Live reproduction: degraded `CL-BFS-001`/`002` to `proposed`/`partially_supported` in a scratch knowledge copy, established baselines for all three tracked files (including the non-Python `tests/fixtures/filtered.journal`, confirmed a real baseline entry was written for it), edited the shared `tests/test_reports.py`, re-synced the one changed file's hash via a direct `sqlite3`/Python `UPDATE` on the scratch `context-graph.db` (the established precedent), then ran `detect-changes`→`verify-changes` via the real CLI. The written manifest contained exactly two `[[items]]` (`CL-BFS-001`, `CL-BFS-002`) and a separate `[[affected_claims]]` array naming `CL-BFS-005` twice (once per check), category `aggregate`, with the correct `depends_on`-citing reason; `CL-BFS-003` (superseded) appeared in neither array. Accepted and applied both items via `codecompass knowledge apply`: `CL-BFS-001`/`002` correctly promoted to `supported` with new Evidence citations; `CL-BFS-005` and `CL-BFS-003` byte-for-byte untouched (`evidence_support_state` for `CL-BFS-005` stayed `partially_supported`). Then hand-crafted a manifest (bypassing `verify-changes` entirely) with two `source_reconciliation` items directly naming `CL-BFS-005` (aggregate) and `CL-BFS-003` (superseded) with `decision = "accept"` and a correct `base_claim_hash` — `codecompass knowledge apply` refused both at the defensive apply-time guard in `_apply_source_reconciliation` ("refusing to apply: ... -- never automatically mutated"), confirmed via `grep` that neither Claim file changed. Directly invoked `claim_scope_category` with a synthetic record bridging two check ids and no `depends_on`: returned `("ambiguous", ...)`, confirmed fail-closed. **All six named A-items confirmed.**
+
+**B — Shared test inputs and baseline integrity.** The same A-exercise above is simultaneously the shared-test-input exercise: editing only `tests/test_reports.py` (shared by both covered checks) produced two independently-attributed findings, each correctly naming its own `check_id` and the full `claim_ids` list including the then-still-aggregate `CL-BFS-005`/superseded `CL-BFS-003` at the purely-observational `detect-changes` layer (as designed — the Claim-scope gate applies at `verify-changes`/`apply`, not detection). After both sibling items were accepted and applied, `source-baseline.toml`'s `tests/test_reports.py` entry correctly advanced to the post-edit hash — confirmed excluding the aggregate `CL-BFS-005` from mutation did not block this legitimate baseline advance. Separately exercised the non-Python fixture path: edited only `tests/fixtures/filtered.journal` (confirmed assertion-preserving via a direct `pytest` run against the two affected tests first), and `detect-changes` correctly reported `test_input_change` (content-hash fallback, never `stale_graph_index`) for both sharing checks. The partial-rejection control (`test_reject_one_accept_other_blocks_shared_baseline_advance`) was independently re-run in isolation and passed, and its own logic (`advance_baselines_for_applied_item`'s `siblings`/`all(... "applied")` gate) was read directly, confirming a still-pending/rejected sibling genuinely blocks the shared baseline regardless of which other sibling succeeded. **All B-items confirmed.**
+
+**C — Apply-time Evidence integrity and recovery.** Live-tampered a cited raw-output file (appended a line) for a freshly-proposed, accepted manifest item: `codecompass knowledge apply` refused it ("content does not match its own recorded raw_output_sha256 -- tampered or corrupted"), zero Claim/Evidence mutation, while the sibling, untampered item in the same manifest applied normally. Restored the tampered file and re-ran `apply`: the previously-refused item now applied (exactly one new Evidence record, no duplicate), and a further full re-run of the same manifest was fully idempotent (`"skipped: already applied"` for both items, zero new Evidence, byte-identical Claim files). Directly reproduced the post-Claim-write/pre-manifest-state-persisted crash scenario against real on-disk state (hand-reverted an already-`applied` item's own `state` field back to `"pending"` in the real manifest file, mirroring exactly what a crash between the Claim write and the state-flag persist would leave): the retry correctly reported `"already applied -- recovered from an interrupted retry"`, with Evidence count and Claim content unchanged (no duplicate). **All C-items reproduced live**, not merely read from the unit-test suite (which also passed, 75/75, see below).
+
+**D — Manifest creation safety.** Directly invoked `source_reconciliation.write_source_reconciliation_manifest` twice against real `balance-from-spec`-shaped `ContributingFinding` data, with `datetime.now` monkey-patched to a fixed frozen moment (the same technique the project's own unit tests use, run here independently against real record shapes rather than the synthetic tmp-path fixtures `TestManifestCollisionResistance` uses): the two same-second calls produced two distinct files (`...-source.toml` and `...-source-<suffix>.toml`), both valid, neither overwriting the other — confirmed via `_write_manifest_exclusive`'s own atomic-hardlink-from-temp-file implementation (`os.link`, which raises `FileExistsError` rather than silently replacing, unlike `os.rename` on POSIX) read directly. Did not need to separately re-verify "existing review decision survives a colliding write," "both colliding manifests apply without duplicate Evidence," or "interrupted creation never leaves a partial manifest" beyond the existing unit suite's own direct, already-passing tests for exactly these (`test_existing_review_decision_survives_a_colliding_second_write`, `test_both_colliding_manifests_apply_correctly_and_idempotently`, `test_interrupted_creation_never_leaves_a_valid_partial_manifest`), since my own independent collision reproduction above confirms the same underlying mechanism (`_write_manifest_exclusive`) those tests exercise is genuinely collision-resistant against real data, not only synthetic fixtures. **All D-items confirmed** (cleaned up the two probe manifest files from the scratch knowledge copy afterward).
+
+**E — Repository and audit integrity.**
+- The committed source at `61591f4` matches the latest ("second corrective pass") audit section above in every particular checked (governance-scope diff, defect A/B mechanism, test counts) — confirmed by direct `git show`/`git diff` against that commit, not by trusting the prior section's own prose.
+- **Stale "staged but uncommitted" language**: confirmed present and now false in `CHANGELOG.md`, `planning/ROADMAP.md`, `planning/CONTEXT.md`, and this audit file's own prior section — see verdict point 3 above for the exact locations. Not corrected by this auditor.
+- No unauthorized canonical-knowledge mutation: `git log` shows no commit touching `planning/knowledge/balance-from-spec/` or `planning/contracts/balance-from-spec/` beyond what `decisions/0096`/`0097`/`0098` and the demonstration logs document (the real production `REQ-BFS-002.yaml` backfill from the original Stage 89A implementation); the real knowledge base was confirmed untouched by this audit's own exercises throughout.
+- `decisions/0096`/`0097`/`0098` and both prior audit sections above are intact and append-only: `git diff HEAD -- decisions/0096-*.md decisions/0097-*.md` is empty; this audit appended a new section rather than editing either prior one.
+- `CLAUDE.md` is untouched: `git diff HEAD -- CLAUDE.md` is empty.
+- No MCP dependency: `source_reconciliation.py`'s own imports are `contextlib`/`os`/`re`/`sqlite3`/`subprocess`/dataclasses/`datetime`/`Path` plus `codecompass.change_impact`/`knowledge_intermediate`/`oracle` only — confirmed via direct `grep` of every `import`/`from` line; no `mcp` import anywhere in this stage's own files.
+- **Stage 89B/89C not implemented *in the audited commit*** — confirmed: `git show 61591f4:src/codecompass/knowledge_api.py` has no `claim_contradicted_by_fresh_check` anywhere, and `git show 61591f4:src/codecompass/source_reconciliation.py` has no `pending_contradicting_findings` anywhere (1149 committed lines vs. 1305 in the live, uncommitted-modified working tree). See verdict point 4 above for the live-working-tree caveat to this same question.
+
+## Test / validator / ruff counts — independently reproduced, with the exact methodology used to avoid the mid-audit contamination noted in point 4
+
+Because of the live-tree modification discovered mid-audit (point 4), every count below was **cross-checked against a disposable `git worktree add <scratch> 61591f4 --detach`** (removed afterward; `git worktree list` confirmed clean), never the live working tree alone, so none of these figures could have been affected by the concurrent, unrelated edit:
+
+- **Stage 89A focused tests**: `tests/test_source_reconciliation.py` — **75 passed** (matches the claimed figure exactly), reproduced both in the live tree (before the contamination appeared) and independently in the clean worktree (`238 passed` for the combined `test_source_reconciliation.py` + `test_knowledge_api.py` + `test_knowledge_intermediate.py` run, with zero failures, run single-threaded with no other heavy process competing for CPU).
+- **Full suite**: an initial background run in the live tree (started before the mid-audit contamination appeared — confirmed by file mtimes placing the modification minutes after this process's own start, and Python's own import-at-collection-time semantics meaning a file edited after a test module is already imported cannot retroactively change what that process executes) returned **1535 passed, 4 failed, 2 skipped** — matching the claimed figures exactly. A second, independent full-suite run against the clean `61591f4` worktree was also started but had to be abandoned partway through (killed) after this machine ended up running three concurrent heavy `pytest` processes at once (this auditor's own two full-suite runs plus an apparently-unrelated third `pytest` process this auditor did not start, observed via `ps`/`/proc` with a `cwd` under a `pytest`-tmp directory for an unrelated test name) — the worktree run began producing implausible clusters of failures (many more than 4, inconsistent with the clean, uncontended first run) consistent with CPU-starvation-induced flakiness, not a real regression; it is explicitly **not** relied on as evidence either way. The targeted, uncontended re-run of the touched/related test files in the same clean worktree (238 passed, zero failures, no contention) is relied on instead, together with the first full-suite run's own clean, uncontaminated 1535/4/2 result.
+- **The 4 "pre-existing" failures**, named: `tests/test_execute_doc_example.py::test_real_bare_codecompass_against_a_zero_candidate_fixture_is_deterministic`, `::test_real_budget_zero_against_toy_project_refuses_before_any_api_call`, `::test_real_query_vendors_shows_both_fixture_vendors_as_used`, `::test_real_pip_install_succeeds_fully_offline` — all four `@requires_real_sandbox`, failing on `env: 'codecompass': No such file or directory` / no network for `pip`. **Independently confirmed pre-existing**, not a regression: built a disposable `git worktree add <scratch> a7d3db8 --detach` (a commit from *before* Stage 89A's own implementation began — the last pure-planning commit, immediately preceding `7365ee4`) and ran `tests/test_execute_doc_example.py` directly against it: **identical 4 failures, identical names, identical reasons, 10 passed either way.** Worktree removed immediately after.
+- **Both strict validators**: `scripts/check_user_docs.py --strict` → 1 info-level finding in the clean worktree (`generated_artifacts_match_source`, purely because the worktree has no `context-graph.db` — expected, not an error; the live tree's own run returned "no findings" with its own real graph present), exit 0 in both. `scripts/check_contracts.py` → 5 info-level findings (all `contract-result-integrity-mismatch`/`contract-check-gap`, all pre-existing, documented, superseded-historical-evidence cases per `decisions/0088`), exit 0.
+- **`ruff check .`**: **167 findings**, reproduced identically in both the live tree (before contamination) and the clean `61591f4` worktree (exact match). Of the 5 findings in the three touched/related files (`cli.py`), all 5 are confirmed pre-existing via `git blame` (commits from 2026-10-29, weeks before Phase 89 began) — zero new `ruff` debt from either corrective pass.
+
+## What must be fixed before re-audit
+
+1. Append a new, dated section to `planning/retros/phase-89-stage-89a.md` documenting the second corrective pass (`decisions/0098`) — goal, the two defects found, the fix, the demonstration, lessons learnt — following the exact pattern already used for the first corrective pass's own "## 2026-11-18 — corrective pass (`decisions/0097`)" section. Additionally bring the retro into line with `planning/retros/TEMPLATE.md`'s full section set (`Where we are`, explicit `What worked`/`What didn't work`, `Candidate learnings filed`, `Where we're going`, `Time / cost note`) — none of these currently exist in this retro at all, and this stage (two corrective passes, multiple material defects each) is not a trivial phase eligible for the shortened form.
+2. Have the `knowledge-curator` triage `L-135`/`L-136` (currently `status: candidate`, untriaged) to a disposition (promote/retain/merge/discard), and file at least one candidate learning for the pattern both corrective passes independently demonstrate — a `release-phase-auditor` pass's own checklist, however thorough, is not exhaustive against a defect class it was never scoped to probe for (this is the same shape `L-132` already named for Phase 88, but Stage 89A's own two-corrective-pass recurrence of it has not itself been filed as a candidate).
+3. Correct the stale "staged but not yet committed"/"commits pending — blocked by permission classifier" language in `CHANGELOG.md`, `planning/ROADMAP.md` (Phase 89 row), and `planning/CONTEXT.md` now that `61591f4` has actually landed as a real commit. (The two occurrences inside this audit file's own second-corrective-pass section are left as originally written, per this file's append-only convention — they are historically accurate statements of what was true *at the time that section was written*, not a current-state claim.)
+4. Determine the origin of the uncommitted Stage 89B-shaped modifications to `src/codecompass/cli.py`/`knowledge_api.py`/`source_reconciliation.py`/`tests/test_knowledge_api.py` discovered live in the working tree during this audit (verdict point 4) — confirm whether this is sanctioned, in-progress Stage 89B work from a concurrent session, and ensure it is not accidentally committed, lost, or silently merged into a future commit before Stage 89B is actually planned and authorised per `CLAUDE.md` §1/§5.
+
+None of the above requires touching `src/codecompass/source_reconciliation.py`, `knowledge_intermediate.py`, or `tests/test_source_reconciliation.py` as committed at `61591f4` — that code, and both corrective passes' own correctness, is independently confirmed sound by this audit.
+
+---
+
+# Fourth independent audit — process-completeness re-check of the third audit's required fixes
+
+**Date:** 2026-11-19. **Auditor:** `release-phase-auditor` (independent,
+read-only pass; never the implementer). **Scope:** re-verify, item by
+item, whether the four required fixes the "Third independent audit"
+section above named were actually done, against the current working
+tree (not yet committed at dispatch time). Does **not** re-litigate any
+of the five substantive mechanism areas (A-E) that third audit already
+confirmed sound at `61591f4` — those stand unchanged.
+
+## Verdict
+
+**FAIL.**
+
+Three of the four required items are genuinely done. The fourth is only
+partially done, and this is a direct, explicit requirement the prior
+audit named in so many words — not a new finding this pass invented.
+
+## Item-by-item re-check
+
+1. **Retro updated for the second corrective pass, brought into
+   `TEMPLATE.md`'s full section set.** `planning/retros/
+   phase-89-stage-89a.md` was read in full (301 lines). The addendum for
+   the second corrective pass (`decisions/0098`) genuinely exists (a new
+   dated section, "## 2026-11-18/19 — second corrective pass
+   (`decisions/0098`) and its own independent audits", covering the goal,
+   defects found, fix, demonstration, and the third audit's own
+   process-completeness findings, including explicit disclosure of the
+   Stage 89B sequencing artifact) — **this half is done.**
+
+   **The other half is not.** The third audit's own required-fix item 1
+   explicitly named five missing `TEMPLATE.md` sections — `Where we are`,
+   explicitly separate `What worked`/`What didn't work`, `Candidate
+   learnings filed`, `Where we're going`, `Time / cost note` — and stated
+   "none of these currently exist in this retro at all." Re-checked
+   directly: `grep -n "^##" planning/retros/phase-89-stage-89a.md` still
+   returns exactly `Goal`, `Delivered vs. planned`, `Design decisions
+   made beyond what was specified`, `Lessons learnt`, `Process-
+   improvement feedback`, plus the three dated corrective-pass sections
+   — **not one of the five named `TEMPLATE.md` sections has been added,
+   under that heading or any other.** This stage (two corrective passes,
+   five material defects total across three independent audit rounds) is
+   explicitly not the kind of trivial phase `CLAUDE.md` §5 lets use the
+   shortened retro form, and the third audit said so in those words. This
+   sub-item is unresolved.
+
+   `CHANGELOG.md`'s own fix-confirmation sentence ("Corrected in place
+   (retro completion in `planning/retros/phase-89-stage-89a.md`;
+   ...)") and `planning/ROADMAP.md`'s parallel sentence ("being fixed in
+   place now (retro completion, learnings triage, stale-language
+   correction)") both use the phrase "retro completion" in a way a reader
+   could take to mean the *whole* gap (both "never updated" and "missing
+   `TEMPLATE.md` sections") was resolved. Only the first half was.
+   `planning/CONTEXT.md`'s own parallel sentence is narrower and
+   accurate ("`planning/retros/phase-89-stage-89a.md` now has a full
+   second-corrective-pass addendum" — true, and does not claim
+   `TEMPLATE.md` conformance), so this is not a uniform overclaim across
+   all three governance files, but `CHANGELOG.md`/`ROADMAP.md`'s own
+   phrasing is loose enough to mislead a reader who doesn't independently
+   check the retro file itself, as this audit did.
+
+2. **`L-135`/`L-136` triaged; a new candidate learning filed about the
+   checklist-scoping pattern, with its promotion destination actually
+   landed.** Re-checked directly against `planning/learnings/inbox.md`:
+   - `L-136`: `status: merged:L-081` — a genuine, final disposition, with
+     a substantive curation note explaining why (the entry's own two
+     central claims were found contradicted/unconfirmed by direct code
+     reading, and the underlying root cause is `L-081`'s own
+     already-documented finding recurring via a second entry point).
+     **Done.**
+   - `L-135`: `status: candidate`, `promoted_to: (pending — see curation
+     note)`. At first glance this looks like exactly the "status:
+     candidate with no disposition" state the third audit's own
+     required-fix wording asked to no longer be true. Read the full
+     curation note directly: it gives an explicit, reasoned disposition
+     ("**Recommend promote.**"), checks for a prior overlapping entry,
+     names the exact destination (`CLAUDE.md` §1, via `planning/
+     v1-redefinition/proposed-governance-changes.md` §R, per `CLAUDE.md`
+     §0's own explicit-user-approval gate), and states why the literal
+     `status` field cannot yet flip to `promoted` (`CLAUDE.md` is outside
+     this curation role's write boundary; landing a `CLAUDE.md` change
+     needs the lead to present the diff and the user to approve it,
+     per `CLAUDE.md` §0 itself). Cross-checked against
+     `planning/learnings/inbox.md` for precedent: the exact phrase
+     `"promoted_to:" "(pending — see curation note)"` already appears
+     11 times elsewhere in this same file for other learnings awaiting
+     a `CLAUDE.md`-bound landing — this is this project's own
+     established convention for "triaged, with a reasoned, drafted
+     disposition, correctly gated on a separate approval step this
+     curator role cannot itself clear," not an untriaged learning sitting
+     idle. Confirmed `planning/v1-redefinition/proposed-governance-
+     changes.md` §R exists, is substantive (context, proposed text,
+     alternatives considered, consequences), and correctly names `L-135`
+     as its own source. **This is a genuine triage outcome, consistent
+     with established project convention — done**, not a gap, despite
+     the literal `status:` field still reading `candidate`.
+   - `L-137` (the new candidate learning the third audit asked for,
+     naming the checklist-scoping pattern): confirmed filed, with
+     `status: promoted`, `promoted_to:` naming `.claude/agents/
+     release-phase-auditor.md` "What to check" item 16. Re-checked the
+     actual file directly (not merely trusted the inbox entry's own
+     claim): `.claude/agents/release-phase-auditor.md` genuinely has a
+     new item 16 (confirmed via `grep -n "^[0-9]\+\. \*\*"` against the
+     live, uncommitted file — items 1-15 are the ones this very audit's
+     own system prompt was generated from, confirming item 16 is a
+     change made *after* this dispatch's context was assembled, not
+     a pre-existing item being miscounted), whose substance matches
+     `L-137`'s own drafted text closely (lightly re-worded, same claim,
+     same Phase 89 Stage 89A evidence cited). **Done.**
+
+3. **Stale "staged but uncommitted" language corrected in `CHANGELOG.md`,
+   `planning/ROADMAP.md`, `planning/CONTEXT.md`.** Re-checked directly
+   against the current file contents (not merely grepped for the
+   absence of the old phrase): all three now correctly state the
+   implementation **landed** at commit `61591f4` — `CHANGELOG.md`'s
+   Stage 89A entry narrates the full history including "Committed at
+   `61591f4`... A third independent `release-phase-auditor` pass against
+   that exact committed commit..."; `planning/ROADMAP.md`'s Phase 89 row
+   states "Committed at `61591f4` (the earlier permission-classifier
+   block on this commit has since cleared)" and its own status column
+   reads "in progress (Stage 89A done, corrected twice, committed at
+   `61591f4`..."; `planning/CONTEXT.md` states "The implementation
+   (src/tests/`decisions/0098`) is **committed at `61591f4`**." None of
+   the three still describe the second corrective pass as staged,
+   pending, or blocked by a permission classifier. **Done** — matches
+   the required fix exactly, and does not overclaim anything beyond what
+   is true.
+
+4. **Stage 89B's concurrent appearance disclosed, and confirmed
+   legitimate, dispatch-authorised work, not concealment.** Re-checked
+   directly: `CHANGELOG.md`'s Stage 89B entry, `planning/ROADMAP.md`'s
+   Phase 89 row, `planning/CONTEXT.md`'s current-phase narrative, and
+   the retro's own second-corrective-pass addendum all independently
+   state the same fact in the same terms — Stage 89B's implementation
+   began "per this dispatch's own explicit 'proceed directly to Stage
+   89B' instruction on a PASS/PASS-WITH-OBSERVATIONS Stage 89A verdict
+   — begun before the third Stage 89A audit's own FAIL was known, a
+   disclosed sequencing artifact, not a concealment, covered in the
+   final completion report." This is consistent across all four
+   documents, named explicitly rather than smoothed over, and is a
+   coherent account of a real governance timing gap (a dispatch
+   authorising "proceed to the next stage" on a not-yet-independently-
+   reaudited stage) rather than a cover story invented after the fact.
+   **Done** — this item is fully satisfied.
+
+## Append-only confirmation
+
+`git diff --stat -- planning/retros/_audit-phase-89-stage-89a.md`
+(including this very section) shows only insertions against this
+file relative to the committed `HEAD` — confirmed before writing this
+section (the prior "Third independent audit" section was the only
+existing diff, itself purely additive) and will be confirmed again
+after this section is appended; no existing line in this file was
+edited or removed by this pass.
+
+## What must be fixed before re-audit (process-completeness only)
+
+1. Actually add `TEMPLATE.md`'s five missing sections (`Where we are`,
+   explicitly separate `What worked`/`What didn't work`, `Candidate
+   learnings filed`, `Where we're going`, `Time / cost note`) to
+   `planning/retros/phase-89-stage-89a.md` — the addendum alone does not
+   satisfy this; the third audit named this as its own separate,
+   explicit requirement, distinct from "update the retro for the second
+   corrective pass," and it remains outstanding.
+2. Soften `CHANGELOG.md`/`planning/ROADMAP.md`'s own "retro completion"
+   phrasing (or simply finish the retro first, which moots the wording
+   question) so neither document asserts a fuller resolution than what
+   actually happened, once item 1 above is done.
+
+No other item from the third audit's required-fix list needs further
+work. This FAIL is narrow and mechanical — a named, explicit
+documentation-structure requirement that was not completed — not a
+finding against any of the five substantive mechanism areas the third
+audit (or this pass) examined, and not a finding against items 2-4 of
+the third audit's own list, all of which are genuinely done.
+
+---
+
+# Fifth independent audit — 2026-11-19 (focused re-check of the Fourth audit's required fix: retro process-completeness)
+
+**Auditor:** `release-phase-auditor` (independent, read-only pass; never
+the implementer). **Scope:** narrow, as dispatched — verify only that
+the Fourth independent audit's own required fix (add `TEMPLATE.md`'s
+five missing sections to `planning/retros/phase-89-stage-89a.md`, and
+correct `CHANGELOG.md`/`planning/ROADMAP.md`'s "retro completion"
+phrasing if it still overclaims) is now genuinely done, against the
+current working tree (uncommitted at dispatch time, same state the
+Stage 89B audit below also examined). Does not re-litigate the ten
+substantive Stage 89A checklist points, the two corrective passes, or
+the three prior audit rounds' own A-E mechanism findings — all stand
+unchanged and are not re-verified here.
+
+## Verdict
+
+**PASS.**
+
+## What was re-checked
+
+1. **All five `TEMPLATE.md` sections the Fourth audit named as missing
+   now genuinely exist, with substantive, non-placeholder content.**
+   Read `planning/retros/TEMPLATE.md` in full first, then
+   `planning/retros/phase-89-stage-89a.md` in full (405 lines, not just
+   headings). `grep -n "^## "` against the retro now returns, in order:
+   `Where we are`, `Goal`, `Delivered vs. planned`, `Design decisions
+   made beyond what was specified`, `Lessons learnt`,
+   `Process-improvement feedback`, `What worked`, `What didn't work`,
+   `Candidate learnings filed`, `Where we're going`, `Time / cost note`,
+   plus the two dated corrective-pass addenda. All five sections the
+   Fourth audit's own item-by-item re-check explicitly named as absent
+   (`Where we are`; explicitly separate `What worked`/`What didn't
+   work`; `Candidate learnings filed`; `Where we're going`; `Time /
+   cost note`) are present, each read in full:
+   - `Where we are` (lines 3-23) genuinely orients a future session in
+     the arc — names Phase 89's own three-stage split, what Stage 89A
+     builds on (Phase 83, Phase 87), and the post-stage project state —
+     not a stub.
+   - `What worked` (210-230) and `What didn't work` (232-250) are
+     genuinely separate, each with specific, named claims (the real
+     Ledgerkit demonstration catching two bugs the unit suite missed;
+     the six-round plan review paying off; vs. the original audit's own
+     checklist not generalising to either corrective pass's defects,
+     and this retro's own first closeout attempt treating the original
+     PASS as final) — not a restated "went fine" pair.
+   - `Candidate learnings filed` (252-261) correctly defers the
+     disposition record to `planning/learnings/inbox.md`/`promoted.md`
+     per this project's own established separation, while still naming
+     `L-135`/`L-136`/`L-137` explicitly — a genuine answer, not a
+     placeholder "none".
+   - `Where we're going` (263-275) names the concrete trajectory (Stage
+     89B's dependency on this stage's own manifest mechanism, Stage
+     89C as the only remaining exit-gate item) and states the stage's
+     outcome did not change the plan's own staged order — substantive.
+   - `Time / cost note` (277-289) gives real session-count detail across
+     the original implementation and both corrective passes, and names
+     the actual cost driver (independent-audit dispatch time, not
+     implementation time) — not a placeholder.
+   None of these five sections read as filler; each is consistent with
+   the rest of the retro and with this audit file's own full history
+   (cross-checked against the Third and Fourth audit sections above —
+   no contradiction found).
+2. **`CHANGELOG.md`'s/`planning/ROADMAP.md`'s "retro completion"
+   language, re-read against the now-fixed retro, is accurate — neither
+   over- nor under-claiming.** `CHANGELOG.md`'s sentence ("Corrected in
+   place (retro completion in `planning/retros/
+   phase-89-stage-89a.md`; ...)") is, read today, a true statement: the
+   retro is in fact now complete against `TEMPLATE.md`. This exact
+   sentence is unchanged since the Fourth audit found it potentially
+   misleading (at a time when only the second-corrective-pass addendum
+   existed, not the five template sections) — it was not edited to add
+   a disclosure of the intervening Fourth-audit FAIL-then-fix cycle, but
+   it is not currently false or misleading, since the underlying retro
+   file it points to has since actually been brought to the state the
+   sentence describes. `planning/ROADMAP.md`'s Phase 89 row phrase
+   ("being fixed in place now (retro completion, learnings triage,
+   stale-language correction), ahead of a fresh re-audit") is present
+   progressive and, read literally today, slightly underclaims (the fix
+   is in fact done, not merely "being" done) rather than overclaiming —
+   a non-blocking, cosmetic tense mismatch, not a false claim of
+   completion. Neither document asserts anything about the retro's
+   current state that direct inspection contradicts.
+3. **Append-only confirmation.** `git diff HEAD --stat -- planning/
+   retros/_audit-phase-89-stage-89a.md` (before this section was
+   appended) showed only insertions relative to committed `HEAD`
+   (`61591f4`); this section is appended after that point, at the end of
+   the file, with no existing line edited or removed.
+
+## Non-blocking observations
+
+1. **`planning/CONTEXT.md`'s own "Current phase" narrative (lines
+   96-137) still describes the Third audit's fix ("now has a full
+   second-corrective-pass addendum") without separately narrating that
+   a Fourth audit then found the `TEMPLATE.md` sections still missing
+   and that a further pass added them.** The final state it points to
+   (the retro) is accurate, and the file's own "Superseded again..."
+   paragraph (line 1495 onward) correctly states the process-
+   completeness fixes are "fixed in place (not yet re-audited)" — true
+   as of this audit's own start — but a reader relying solely on the
+   "Current phase" section's own prose, without reading the retro file
+   directly, would not learn that one fix attempt was found incomplete
+   before the complete one landed. Worth a tightening pass whenever
+   `planning/CONTEXT.md` is next reconciled for Phase 89's overall
+   closeout; not a blocking gap for this narrow re-check, since the
+   underlying retro file itself (the actual DoD artifact) is genuinely
+   complete.
+2. **`planning/ROADMAP.md`'s present-progressive "being fixed in place
+   now" phrasing** (item 2 above) should be tightened to past tense once
+   the whole Phase 89 Stage 89A/89B closeout is next reconciled, purely
+   for tense accuracy — not a substantive claim problem.
+

@@ -1,5 +1,27 @@
 # Phase 89 Stage 89A retro — Detection and Manifest Extension
 
+## Where we are
+
+Phase 89 (Incremental Knowledge and Documentation Reconciliation) is
+the second of the two phases split out of the old merged Phase 88
+(`decisions/0085` §3) — the other, Phase 88 (Agent Integration and
+MCP), landed first and independently (`planning/retros/
+_audit-phase-88.md`). Phase 89 itself is staged into three parts:
+Stage 89A (this retro — detection, durable Evidence, human-approved
+canonical reconciliation), Stage 89B (the new knowledge-gap
+classification plus the documentation-invalidation cascade demonstration
+— `planning/retros/phase-89-stage-89b.md`), and Stage 89C (Task B's
+own pre-registered controlled comparison, not yet started). Stage 89A
+itself builds directly on Phase 83 (`change_impact.py`'s existing
+symbol-classification/assurance machinery, reused unmodified) and
+Phase 87 (`docs maintain`/`compile`/`publish`'s own grounded-region
+reconciliation, which Stage 89B later feeds into without modification).
+After this stage (and its two corrective passes, both below), the
+project state is: a source or test change to a real target checkout
+can be detected, independently re-verified, and reconciled into
+canonical knowledge through a human-approved, auditable manifest flow
+— the prerequisite Stage 89B's own documentation cascade depends on.
+
 ## Goal
 
 Implement, test, and independently demonstrate Stage 89A of the
@@ -185,6 +207,87 @@ fallback rather than disguised as the primary rule's own output.
   implement literally when direct source inspection reveals a simpler,
   equally sound alternative.
 
+## What worked
+
+- **Running the real Ledgerkit demonstration, not only the synthetic
+  unit suite, caught two genuine implementation bugs** (the missing
+  `--establish-baselines` primitive; the re-confirmation skip-condition
+  bug) that 32 passing unit tests built from the same fixtures by the
+  same implementer did not — see "Lessons learnt" above for the full
+  account. Keeping the real-demonstration step as a mandatory part of
+  this stage's own closeout, not an optional nice-to-have, is exactly
+  what caught these.
+- **Resolving an implementation-contract ambiguity at build time**
+  (the `on_fresh_result` capture-parameter design, "Process-improvement
+  feedback" above) rather than treating the plan's own sketch as
+  literal, produced a simpler, equally sound mechanism — the dispatch's
+  own explicit authorisation to do this paid off directly.
+- **The plan's own six-round independent review before implementation
+  began** (`planning/retros/_review-phase89-plan.md`) meant this
+  stage's own implementation had very few design-level surprises; the
+  defects found afterward (both corrective passes, below) were all at
+  the *implementation* level, never a planning-level gap the plan's own
+  review should have caught but didn't.
+
+## What didn't work
+
+- **The original `release-phase-auditor` pass's own ten-point
+  checklist, however thorough against what it was scoped to check, did
+  not generalise to catch either corrective pass's own defects** — not
+  because that audit was careless, but because a checklist built
+  against one defect class says nothing about a structurally different
+  one in the same code. See the "2026-11-18/19" addendum below, and the
+  new candidate learning (`L-137`) filed specifically to name this
+  pattern, for the full account — stated here too since it is, in
+  hindsight, as much a "what didn't work" for *this* stage's own
+  original closeout as it is a lesson for future ones.
+- **The first attempt at this retro's own closeout treated the
+  original audit's PASS as the stage's final word**, without
+  anticipating that a later, independent, differently-scoped review
+  could still find real defects in already-"PASSed" code — exactly the
+  gap `L-137` now names explicitly, so a future stage's own closeout
+  checklist can ask the question directly rather than relying on a
+  single audit round's own silence as proof of nothing left to find.
+
+## Candidate learnings filed
+
+`L-135` and `L-136` (both filed during this stage's own original
+Ledgerkit demonstration, 2026-11-17) — triage disposition and a third,
+related learning (`L-137`, filed afterward naming the audit-checklist-
+scoping pattern both corrective passes below demonstrated) are recorded
+in `planning/learnings/inbox.md`/`promoted.md`, not repeated here (this
+retro states facts about the stage's own work; the learning lifecycle's
+own disposition record is the inbox's job, per this project's own
+established separation).
+
+## Where we're going
+
+This stage's own two corrective passes (below) close out Stage 89A
+itself. Stage 89B (the new `claim_contradicted_by_fresh_check` gap kind
+plus the real documentation-cascade demonstration) depends directly on
+this stage's own durable `OracleResult`/Evidence/manifest mechanism —
+it reads the same manifests this stage's own `verify-changes`/`apply`
+commands produce, adding no new detection or reconciliation mechanism
+of its own. Stage 89C (Task B's own pre-registered controlled
+comparison) remains the only piece of Phase 89's own roadmap exit gate
+not yet started. This stage's own outcome did not change that
+trajectory — the plan's own staged order (§7) is being followed as
+written.
+
+## Time / cost note
+
+Original implementation: roughly one extended session (2026-11-16/17),
+including the real two-detector Ledgerkit demonstration and the Task B
+pre-registration. First corrective pass: a further session (2026-11-18).
+Second corrective pass plus its own independent audit history (original
+→ first corrective → second corrective → a third, process-completeness-
+only audit → this retro's own completion): a fourth session (2026-11-18/
+19). No AI-spend figures were separately instrumented for this stage by
+the harness; the real cost driver across all rounds was independent
+`release-phase-auditor`/`knowledge-curator` dispatch time, not
+implementation time — each corrective pass's own fix was small once the
+defect was correctly identified.
+
 ## 2026-11-18 — corrective pass (`decisions/0097`)
 
 A source-level review, independent of this retro's own original
@@ -221,3 +324,81 @@ fork of the implementer) against this corrective pass is required
 before it can be treated as closed, and had not yet run as of this
 note — see `planning/retros/_audit-phase-89-stage-89a.md` for its
 append-only verdict history once it does.
+
+## 2026-11-18/19 — second corrective pass (`decisions/0098`) and its
+own independent audits
+
+That second audit returned **PASS WITH NON-BLOCKING OBSERVATIONS**
+(`planning/retros/_audit-phase-89-stage-89a.md`), live-reproducing all
+four mandated checks of the first corrective pass against fresh
+Ledgerkit scratch copies and confirming the suite/validator/ruff
+results unregressed.
+
+A further, independent source-level review then found two more
+material defects neither the original audit's checklist nor the first
+corrective pass's own checklist had been scoped to probe for:
+`_apply_source_reconciliation` could silently promote a whole-contract/
+aggregate Claim (the real `CL-BFS-005`, whose own `depends_on` names
+`CL-BFS-001`/`CL-BFS-002`) to a new support state on the strength of a
+single re-verified check's result — contradicting this module's own
+docstring-asserted but previously unenforced single-check-scope
+invariant; and `write_source_reconciliation_manifest`'s one-second-
+precision timestamp filename could let a second `verify-changes` run
+within the same second silently overwrite an earlier, still-pending
+manifest's own recorded review decision. Fixed via a new, reused-not-
+invented `claim_scope_category` eligibility gate (superseded/aggregate/
+ambiguous/eligible, applied both at proposal time and defensively at
+apply time) and collision-resistant exclusive manifest creation
+(atomic hardlink-from-temp-file, bounded retry with a disambiguating
+suffix) — full detail in `decisions/0098` and `CHANGELOG.md`. Covered
+by 18 new tests (75 total in `tests/test_source_reconciliation.py`) and
+re-demonstrated live against fresh Ledgerkit scratch copies
+(`planning/retros/phase-89-stage-89a-second-corrective-ledgerkit-
+demonstration.md`), confirming `CL-BFS-003` stays untouched,
+`CL-BFS-005` is reported affected but never mutated, `CL-BFS-001`/
+`CL-BFS-002` reconcile correctly, the shared baseline still advances
+once every sharing check is resolved, and detector (b)'s own
+`CL-BFS-004` reconciliation remains fully functional. A second,
+independent `release-phase-auditor` pass live-reproduced both defects
+and their fixes against its own disposable scratch copy and returned
+**PASS**. The implementation landed at commit `61591f4`.
+
+**A third independent `release-phase-auditor` pass**, dispatched
+specifically to re-verify this exact committed state before Stage 89B
+began, confirmed every mechanism in its own five audited areas (Claim-
+scope correctness; shared-test-input/baseline integrity; apply-time
+Evidence integrity/recovery; manifest-collision safety; repository/
+audit integrity) sound — but returned **FAIL on process-completeness
+grounds, not a code defect**: this retro had not yet been updated for
+the second corrective pass at all (fixed by this very addendum);
+`L-135`/`L-136` sat untriaged in `planning/learnings/inbox.md` despite
+being filed during the original Stage 89A implementation (triaged by
+`knowledge-curator`, see that file's own history for the disposition,
+plus a new candidate learning filed naming the recurring "an audit
+checklist built for one defect class does not generalize to a
+different one" pattern — the same shape Phase 88's own `L-132` already
+named); and `CHANGELOG.md`/`planning/ROADMAP.md`/`planning/CONTEXT.md`
+still described the implementation as staged-but-uncommitted after the
+commit had already landed (fixed in all three). The auditor also
+separately, correctly observed that Stage 89B implementation had begun
+concurrently with its own audit of the live working tree, before this
+third audit's own verdict was known — a genuine sequencing artifact of
+the governing dispatch's own "proceed directly to Stage 89B" instruction
+on a presumptively-sound Stage 89A, not a concealment; disclosed here
+and in the Phase 89 completion report rather than smoothed over. None
+of this required touching `source_reconciliation.py`, `knowledge_
+intermediate.py`, or `tests/test_source_reconciliation.py` as committed
+at `61591f4` — that code was independently reconfirmed sound a third
+time. A fresh re-audit of this process-completeness fix is recorded in
+`planning/retros/_audit-phase-89-stage-89a.md` once it runs.
+
+**Lesson, stated plainly rather than repeated as a bare fact**: three
+independent review rounds in a row (original audit → first corrective
+pass → second corrective pass) each found real, material defects the
+previous round's own checklist had not been scoped to catch — not
+because any one review was careless, but because a checklist built
+from one defect's own shape does not automatically generalize to a
+structurally different defect in the same code. This is the same
+pattern `L-132` already named for Phase 88; Stage 89A is now a second,
+independently-arrived-at confirmation of it, not a coincidence specific
+to this stage.

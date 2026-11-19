@@ -3791,6 +3791,19 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   §2.2, appended after the `L-062` paragraph. `promoted.md` pointer line
   added.
 
+- **recurrence note (2026-11-19, knowledge-curator, Phase 89 Stage 89A
+  triage):** confirmed second occurrence — `L-136` (Phase 89 Stage 89A)
+  reports the identical SDK `TypeError` (missing Anthropic API key,
+  surfaced from `enrichment._call_anthropic`'s header-validation step,
+  not caught by its own narrow `except anthropic.AnthropicError`) this
+  time via `codecompass sync --yes` rather than bare `codecompass --yes`
+  — same root cause, same `_maybe_run_enrichment`/`check_budget` code
+  path (`cli.py::sync` wires `budget` into `_maybe_run_enrichment`
+  identically to `_bootstrap`), confirmed by direct reading of both call
+  sites. `L-136` merged into this entry (see its own inbox note for two
+  flagged discrepancies against this entry's already-landed guidance that
+  need the lead's direct verification before any further action).
+
 ### L-080 — never construct a multi-line `git commit -m` message containing backtick-quoted code identifiers as an interpolated shell string
 
 - **origin:** Phase 80 (CodeCompass-wide documentation reconstruction),
@@ -13023,10 +13036,43 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 - **project_revision:** 52bc369 (codecompass) + ledgerkit@a7740fd (disposable scratch copy only, never the real checkout)
 - **observation:** Running the real detect→verify→apply→reverse→detect→verify→apply sequence against a disposable `~/projects/ledgerkit` scratch copy surfaced two genuine implementation bugs (a missing baseline-bootstrap primitive; `propose_reconciliation` unconditionally skipping a re-confirming PASS regardless of the target Claim's own current `evidence_support_state`) that 32 passing unit tests, built from synthetic fixtures by the same implementer, did not catch — because no single unit test constructed the same multi-step state-transition sequence (accept a regression, then reverse and re-verify) a real demonstration naturally exercises.
 - **evidence:** `planning/retros/phase-89-stage-89a.md` "Lessons learnt"; commits `b7e9a10`/`52bc369`.
-- **classification:** workflow
+- **classification:** project-rule (reclassified from the original
+  `workflow` filing — see curation note)
 - **status:** candidate
-- **recurrence:**
-- **promoted_to:**
+- **recurrence:** first occurrence as a distinctly-filed candidate, but
+  belongs to the same `CLAUDE.md` §1 lineage as `L-021`/`L-070`/`L-075`/
+  `L-087`/`L-088`/`L-110`/`L-116`-`L-120`/`L-131` — a real, reproduced
+  defect shape missing from a plan's verification requirements, not a
+  recurrence-count-gated finding.
+- **promoted_to:** (pending — see curation note)
+- **curation note (2026-11-19, knowledge-curator, Phase 89 Stage 89A
+  triage):** all required fields present — accepted as filed. Checked
+  for a prior, overlapping entry: `agent-led-development.md` §1's
+  already-landed `L-113` bullet ("run a new validator/checker script
+  against the real corpus before its test suite is finalized") is
+  adjacent but distinct — that bullet is about a *script scanning a
+  real data population*, this finding is about a *multi-step
+  state-transition sequence* (accept→reverse→re-verify) that no single
+  isolated per-step unit test, however numerous, can exercise; confirmed
+  genuinely different by re-reading both the cited retro and
+  `agent-led-development.md` §1 directly. **Recommend promote.** This is
+  the same shape (and the same evidentiary bar — one real, reproduced
+  defect) that `L-021`/`L-070`/`L-075`/`L-087`/`L-088`/`L-110`/`L-116`-
+  `L-120`/`L-131` were each promoted on: a cheap, mechanically-checkable
+  addition to what a phase's plan must specify *before* implementation,
+  not an after-the-fact audit check — so `CLAUDE.md` §1 (via
+  `planning/v1-redefinition/proposed-governance-changes.md`, per
+  `CLAUDE.md` §0) is the better-fitting destination than
+  `agent-led-development.md` §1 (which `L-132`/`L-086` already occupy
+  for *review-process* discipline, not *plan-content* requirements) or
+  `.claude/agents/release-phase-auditor.md` (an after-the-fact audit
+  check, not a plan-time one). Reclassified from the original `workflow`
+  filing to `project-rule` to match. Draft written to
+  `planning/v1-redefinition/proposed-governance-changes.md` §R, for the
+  lead to present to the user per `CLAUDE.md` §0. Outside this role's own
+  write boundary (never `CLAUDE.md` directly) — landing it is the lead's
+  action, after which this entry flips to `status: promoted` with a
+  `promoted.md` pointer line.
 
 ### L-136 — `codecompass sync`'s own Phase B enrichment step fails non-fatally without an API key, after the graph rebuild it's meant to gate has already succeeded
 
@@ -13036,6 +13082,188 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 - **observation:** `codecompass sync --yes` against a disposable scratch copy with no Anthropic API key configured prints an uncaught `TypeError` from the `anthropic` SDK's own header-validation step and exits 0 -- but `context-graph.db` is already correctly rebuilt by the time this happens, so the error is cosmetic for any caller that only needs the graph (as Phase 89's own detectors do), not fatal. No existing flag (e.g. `--budget 0`) currently suppresses the attempt cleanly when no key is configured.
 - **evidence:** `/tmp/claude-1000/.../tasks/b817q2w7d.output` (session-local, not committed); reproducible via `cd <any synced repo> && codecompass sync --yes` with no `ANTHROPIC_API_KEY` set.
 - **classification:** future-improvement
-- **status:** candidate
-- **recurrence:**
-- **promoted_to:**
+- **status:** merged:L-081
+- **recurrence:** second occurrence of `L-081`'s own root cause (Phase
+  78, bare `codecompass --yes`) — this time via `codecompass sync --yes`.
+  Recurrence note added to `L-081`'s own entry above.
+- **promoted_to:** n/a — see `L-081` (`planning/v1-redefinition/reference-project-protocol.md` §2.2)
+- **curation note (2026-11-19, knowledge-curator, Phase 89 Stage 89A
+  triage):** all required fields present — accepted as filed, but two of
+  this entry's own specific claims are contradicted by direct code
+  reading and need the lead's independent re-verification before this
+  disposition is treated as final:
+  1. **"No existing flag (e.g. `--budget 0`) currently suppresses the
+     attempt cleanly when no key is configured"** — contradicted by
+     `L-081`'s own already-landed finding (Phase 78,
+     `reference-project-protocol.md` §2.2), confirmed by direct reading
+     of `src/codecompass/cli.py::sync` (line ~331) and `::_bootstrap`
+     (line ~173): both call the identical `_maybe_run_enrichment(...,
+     budget=budget)`, whose `enrichment.check_budget` (`enrichment.py:
+     593-619`) raises `EnrichmentError` — caught and reported cleanly,
+     *before* `run_enrichment_batches`/`_call_anthropic` is ever reached
+     — whenever `estimated > budget`. `--budget 0` should therefore abort
+     `sync` just as cleanly as it already does for bare `codecompass`,
+     unless something about `sync`'s specific candidate set differs from
+     bare `codecompass`'s in a way this triage could not observe by
+     reading alone. **Lead: re-run `codecompass sync --budget 0` (no
+     `ANTHROPIC_API_KEY` set) against the same kind of disposable scratch
+     copy and confirm whether it reaches the clean budget-exceeded
+     message or still hits the SDK `TypeError`, before treating "no flag
+     suppresses this" as true.**
+  2. **"exits 0"** — direct reading of `cli.py` found no top-level
+     exception handler (`if __name__ == "__main__": app()` at the bottom
+     of the file, no `try`/`except` wrapping it, no `sys.exit` override)
+     that would convert an uncaught `TypeError` propagating out of
+     `_maybe_run_enrichment` into a zero exit code — Python's/Click's
+     default behavior for an unhandled exception is a printed traceback
+     and a **non-zero** exit. This claim may be accurate (something this
+     triage's read-only pass did not find), but it is surprising enough,
+     and consequential enough (it is the entry's own basis for calling
+     the failure "cosmetic" rather than a real pipeline break), to need
+     direct confirmation rather than being taken on the entry's own word.
+     **Lead: re-run the cited repro command and check `echo $?`
+     immediately after, before relying on "non-fatal" framing anywhere
+     downstream.**
+
+  Given both of this entry's own distinguishing claims are in question,
+  and the underlying root cause (a `TypeError` escaping
+  `_call_anthropic`'s narrow `except anthropic.AnthropicError`) is not
+  new — it is `L-081`'s own already-documented finding, now confirmed to
+  recur via a second entry point (`sync`, not only bare `codecompass`) —
+  **merge into `L-081`** rather than promote or retain separately.
+  Recommend, separately from this merge (not itself a new candidate
+  learning, scope-limited per this triage's own dispatch): a small
+  `future-improvement` to broaden `_call_anthropic`'s exception handling
+  beyond `anthropic.AnthropicError` so a missing/invalid-key run produces
+  a clean `EnrichmentError` message at the source, regardless of which
+  entry point reaches it or whether `--budget` was passed — hand to
+  `roadmap-context-curator` for a `planning/ROADMAP.md` backlog row if
+  the lead agrees, once the two verification items above are resolved.
+
+### L-137 — an audit's own checklist, however thorough, is scoped to the defect class it was built to probe for; it is not evidence against a *different* defect class in the same code, and a corrective pass's own checklist inherits the identical limitation for whatever it was built to fix (extends L-132)
+
+- **origin:** Phase 89 Stage 89A, the third independent
+  `release-phase-auditor` pass over the stage's fully committed state
+  (`planning/retros/_audit-phase-89-stage-89a.md`, "Third independent
+  audit" section, verdict point 2's own explicit recommendation to file
+  this)
+- **date:** 2026-11-19
+- **project_revision:** `61591f4` (HEAD, Stage 89A fully committed and
+  pushed)
+- **observation:** within one single stage, three independent audit
+  rounds each found real defects the *previous* round's own checklist
+  had not been scoped to probe for — not because any round was sloppy
+  against its own scope, but because each checklist was built against
+  the defect class its own dispatch named, and said nothing about a
+  different defect class living in the same code:
+  1. The original Stage 89A audit's own explicit ten-point checklist
+     (scoped to the stage's named detector/CLI/provenance claims) was
+     never scoped to probe for `ruff` hygiene at all — it found 64 new
+     `E501` violations only as a side observation, not via any of its
+     ten points, and separately did not — because it was not dispatched
+     to — examine the shared-test-input attribution, apply-time
+     re-validation, or idempotent-retry-recovery defects the first
+     corrective pass (`decisions/0097`) later found and fixed.
+  2. That first corrective pass's own governing dispatch and its
+     resulting audit (the "Re-audit — 2026-11-18, corrective pass"
+     section of the same file) were scoped to exactly those three
+     defects plus two bounded integrity fixes — and, in turn, said
+     nothing about, and did not probe for, Claim-scope eligibility or
+     manifest-collision safety, the two defects the *second* corrective
+     pass (`decisions/0098`) later found and fixed.
+  3. The second corrective pass's own audit (the "Third independent
+     audit" section) found, independently of the five verification
+     areas it was itself dispatched to check (A-E), that the phase retro
+     had never been updated for the second corrective pass at all and
+     that `L-135`/`L-136` remained untriaged — neither gap named by
+     either of the two prior checklists, because neither was scoped to
+     check retro completeness or learnings triage as part of verifying
+     its own named defect class.
+  Each checklist, judged against what it was actually built to check,
+  was accurate. The gap was never reviewer diligence within scope — it
+  was treating "this round's checklist came back clean" as evidence
+  against defect classes that checklist was never asked about.
+- **evidence:** `planning/retros/_audit-phase-89-stage-89a.md` — the
+  original audit's "## Verdict" + "## The ten checklist points" sections
+  (ten-point scope, no `ruff` point, no shared-input/apply-time/
+  idempotent-retry point); the "Re-audit — 2026-11-18, corrective pass"
+  section's own stated scope ("three material defects... plus two
+  bounded integrity fixes," no Claim-scope/manifest-collision point);
+  the "Third independent audit" section's verdict points 1-2 (retro gap,
+  `L-135`/`L-136` untriaged, found outside both prior checklists'
+  scopes). `decisions/0096` (original), `decisions/0097` (first
+  corrective pass, three defects + two integrity fixes),
+  `decisions/0098` (second corrective pass, two defects) — each ADR's
+  own "Context" section names a defect class absent from the ADR
+  immediately before it. `L-132` (Phase 88, `planning/retros/
+  _audit-phase-88-stage-88a.md`/`_audit-phase-88-stage-88b.md`,
+  `planning/retros/phase-88-agent-integration-mcp.md` Lessons learnt #2)
+  — the same underlying shape, already named once for five planning-
+  amendment rounds and two stage audits, recurring here within a single
+  stage's own three audit rounds.
+- **classification:** scoped-rule
+- **status:** promoted
+- **recurrence:** this is the project's own meta-pattern's *second*
+  distinctly-filed instance (`L-132`, Phase 88, five planning-amendment
+  rounds + two stage audits) — but a materially different grain: `L-132`
+  named *that review must continue until a round finds nothing new*;
+  this entry names *why* a round that comes back clean can still miss
+  something — because its own checklist was never scoped to look for it.
+  Phase 89 Stage 89A is the third-within-one-phase recurrence of the
+  general shape and the first to isolate the checklist-scoping mechanism
+  specifically.
+- **promoted_to:** `.claude/agents/release-phase-auditor.md` "What to
+  check," item 16 (landed by the lead, 2026-11-19; `promoted.md` line
+  added with the exact commit once committed)
+- **curation note (2026-11-19, knowledge-curator, Phase 89 Stage 89A
+  triage):** all required fields present — filed directly by this
+  triage, per the third audit's own explicit recommendation (verdict
+  point 2). Checked for a prior, overlapping entry: `L-132` (already
+  `status: promoted`, landed in `planning/v1-redefinition/
+  agent-led-development.md` §1) names the adjacent but distinct claim
+  that review must continue after any single fix until a round finds
+  nothing new — a *reviewer-discipline* framing. This entry's claim is
+  narrower and more mechanical: a checklist's *scope*, not a reviewer's
+  *diligence*, is the limiting factor — distinct enough, and specific
+  enough to a different kind of destination (an auditor's own checklist
+  practice, not a cross-cutting process-discipline bullet), to warrant
+  its own filing rather than only incrementing `L-132`'s recurrence
+  count. **Recommend promote** — scoped-rule,
+  `.claude/agents/release-phase-auditor.md` "What to check," new item 16
+  (directly after item 15, the last-landed item), matching the precedent
+  of `L-086`/`L-111`/`L-113`/`L-130`/`L-134` (each a release-phase-auditor-
+  specific checklist addition, within this curator's recommend-only
+  reach; `.claude/agents/` is outside this role's own write scope — the
+  lead or `docs-maintainer` finalises). Draft text:
+
+  > **16. An audit's own checklist, however thorough, is scoped to the
+  > defect class it was built to probe for — a clean result against it
+  > is not evidence against a *different* defect class in the same code,
+  > and a corrective pass's own checklist inherits the identical
+  > limitation for whatever defect class *it* was built to fix.** When
+  > auditing a corrective pass, do not treat a prior round's clean
+  > checklist result as having ruled out a different kind of gap in the
+  > same code; when your own pass's checklist also comes back clean,
+  > name explicitly which defect classes it was — and was not — scoped
+  > to probe for, so a later round (or the next corrective pass) is not
+  > relying on checklist coverage that was never actually exercised.
+  > Confirmed at Phase 89 Stage 89A, recurring three times within one
+  > stage: the original audit's own ten-point checklist was never scoped
+  > to probe for `ruff` hygiene and separately did not catch any of the
+  > three defects (shared-test-input attribution, apply-time
+  > re-validation, idempotent-retry recovery) the first corrective pass's
+  > own dispatch later found; that corrective pass's own five-area
+  > checklist, in turn, was never scoped to probe for the two defects
+  > (Claim-scope eligibility, manifest collision safety) the second
+  > corrective pass's own dispatch found. Each checklist, judged against
+  > what it was built to check, was accurate — the gap was a checklist
+  > bounded to one defect class, not reviewer diligence. (Phase 89 Stage
+  > 89A — `L-137`; generalises `L-132`'s Phase 88 finding — review
+  > continues until a round finds nothing new — by naming specifically
+  > *why* a clean round can still miss something.)
+
+  Once the lead/`docs-maintainer` lands this in
+  `.claude/agents/release-phase-auditor.md`, flip to `promoted` and add:
+  `L-137 | 2026-11-19 | scoped-rule | .claude/agents/release-phase-auditor.md
+  "What to check" item 16 (an audit checklist's scope does not generalise
+  across defect classes; extends L-132) @ <landing commit>`.

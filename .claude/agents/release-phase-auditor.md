@@ -143,6 +143,21 @@ without fixing anything — that a phase is actually done.
     the phase-level case, recurring at stage granularity, where the
     phase-level mechanical check does not reach.
 
+16. **A clean verdict from a prior audit's own checklist says nothing
+    about a defect class that checklist was never scoped to probe
+    for** — do not treat an earlier PASS as evidence the code is sound
+    against a *different* kind of defect than what that audit actually
+    checked; read the implementation directly, against the dispatch's
+    own full requirements, rather than reasoning from "it already
+    passed once." Confirmed as a real, recurring pattern, not
+    hypothetical: Phase 89 Stage 89A's original audit's own checklist
+    did not probe for the defects the first corrective pass found, and
+    that corrective pass's own checklist did not probe for the defects
+    the second corrective pass found (`L-137`, extending `L-132`'s own
+    same-shaped finding at Phase 88) — three independent rounds in a
+    row on the same stage, each missing something scoped outside the
+    previous round's own checklist.
+
 ## Hard rules
 
 - **Read-only.** You do not fix anything you find — you report the gap

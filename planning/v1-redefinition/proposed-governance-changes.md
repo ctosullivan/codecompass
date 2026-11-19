@@ -1368,3 +1368,68 @@ approved as drafted.
   root parameter, not an implicit cwd convention), since the MCP-layer
   `_chdir` wrapper mitigates but does not close the underlying fragility
   for any future, differently-invoked caller.
+
+## R. 2026-11-19 proposed addition (Phase 89 Stage 89A — `L-135`)
+
+**Status:** proposed, not yet presented to the user. Filed by
+`knowledge-curator` during the Phase 89 Stage 89A terminal triage
+(prompted by a third independent `release-phase-auditor` pass flagging
+`L-135`/`L-136` as untriaged). Append after §Q (or after whichever of
+§K-§Q lands last).
+
+### R1 — §1 "Plan before implementing": require an end-to-end sequence test for any mechanism with its own multi-step state-transition sequence
+
+- **Context:** Stage 89A's own implementation shipped 32 passing unit
+  tests, each exercising one step of the new `source_reconciliation`
+  mechanism in isolation against synthetic fixtures. Running the real
+  detect→verify→apply→reverse→detect→verify→apply sequence against a
+  disposable Ledgerkit scratch copy surfaced two genuine bugs neither
+  that unit suite nor its own plan review caught: a missing
+  baseline-bootstrap primitive, and `propose_reconciliation`
+  unconditionally skipping a re-confirming `PASS` regardless of the
+  target Claim's own current `evidence_support_state`. Neither bug lived
+  in any single step considered alone — both lived specifically in the
+  *transition* between steps (reversing an already-accepted change, then
+  re-detecting and re-verifying it), which no per-step unit test, however
+  numerous, was shaped to exercise. Full account:
+  `planning/learnings/inbox.md`'s `L-135`;
+  `planning/retros/phase-89-stage-89a.md` "Lessons learnt".
+- **Proposed text — append to §1, as a new sentence directly after the
+  last-landed of the `L-088`/`L-110`/`L-116`-`L-120`/`L-131` sentences:**
+
+  > If a phase's design introduces a mechanism with its own multi-step
+  > state-transition sequence (e.g. accept a change, then reverse and
+  > re-verify it; apply, then retry after an interruption), the plan's
+  > verification section must include at least one test that exercises
+  > the full sequence end-to-end, not only isolated per-step unit tests
+  > built from synthetic fixtures — a battery of per-step tests, however
+  > numerous, cannot by itself prove the sequence as a whole behaves
+  > correctly, since a defect can live purely in the transition between
+  > two steps each already covered in isolation. (Phase 89 Stage 89A —
+  > L-135.)
+
+- **Alternatives considered:** (a) treat this as already covered by
+  `L-021`'s "real production call site" sentence — rejected: both of
+  this phase's own 32 unit tests already called the real
+  `source_reconciliation` functions directly (not a stub), so `L-021`'s
+  own fix (test through the real call site) would not have required
+  writing a sequence test; the gap here is sequence *shape*, not call-site
+  *reality*; (b) require that every such mechanism be validated against a
+  real reference project specifically, not merely a synthetic end-to-end
+  sequence test — considered, but rejected as the wrong grain for a
+  `CLAUDE.md` §1 plan-content requirement: the two bugs this entry
+  evidences are logic defects a synthetic sequence test (accept, reverse,
+  re-verify, all against constructed fixtures) could equally have caught
+  without needing a real target; a real-reference-project requirement
+  remains `planning/v1-redefinition/reference-project-protocol.md`'s own
+  domain, not this one; (c) hold for a second occurrence before
+  promoting — rejected as the wrong precedent, matching
+  `L-021`/`L-070`/`L-075`/`L-087`/`L-088`/`L-110`/`L-116`-`L-120`/
+  `L-131`'s own single-occurrence promotions, each justified on evidence
+  quality (a real, reproduced defect pair, found only by a sequence a
+  plan's own verification section did not require testing) rather than
+  recurrence count.
+- **Consequences if approved:** `CLAUDE.md` §1 gains the sentence above;
+  `CONTRIBUTING.md`'s mirrored section gets the same addition in the
+  same commit; `planning/learnings/inbox.md`'s `L-135` flips to `status:
+  promoted` with a `promoted.md` pointer line once the edit lands.

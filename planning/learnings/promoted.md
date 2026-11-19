@@ -113,4 +113,5 @@ L-121 | 2026-11-07 | architecture | docs/architecture/overview.md "Known footgun
 L-122 | 2026-11-07 | future-improvement | planning/ROADMAP.md "Future-improvement backlog" table (docs compile/compose_section never surfaces the clean-room broker's own usage/cost figures, though the data exists in its response) @ faa87be
 L-123 | 2026-11-09 | open-work | planning/CONTEXT.md (next step: reconcile EV-CTXT-021 into CL-CTXT-005) @ 195dcc5
 L-124 | 2026-11-09 | future-improvement | planning/ROADMAP.md (backlog: docs publish residual write-boundary race, revisit if Stage 87C introduces genuine multi-writer concurrency) @ 195dcc5
+L-137 | 2026-11-19 | scoped-rule | .claude/agents/release-phase-auditor.md "What to check" item 16 (a clean checklist result is not evidence against a defect class the checklist was never scoped to probe for; extends L-132) @ (this stage's own closeout commit)
 
