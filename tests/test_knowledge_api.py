@@ -1135,7 +1135,7 @@ class TestClaimContradictedByFreshCheckGap:
         self, project_root, slug, contract_path, *, claim_id="CL-GAP-001", check_id="chk-a",
         run_id="r1", contract_id="REQ-GAP-001", outcome="FAIL", state="pending",
         decision="undecided", label="regression", manifest_name="m1",
-        raw_output_ok=True,
+        raw_output_ok=True, repo_root_override=None,
     ):
         results_dir = project_root / "planning" / "contracts" / slug / "results"
         result_path = results_dir / f"{check_id}--{run_id}.yaml"
@@ -1162,7 +1162,9 @@ class TestClaimContradictedByFreshCheckGap:
                 "kind": "source_reconciliation",
                 "record_id": claim_id,
                 "base_claim_hash": "",
-                "repo_root": str(project_root),
+                "repo_root": (
+                    repo_root_override if repo_root_override is not None else str(project_root)
+                ),
                 "contributing_source_paths": [],
                 "contributing_source_hashes": [],
                 "contributing_contract_ids": [contract_id],
@@ -1207,6 +1209,50 @@ class TestClaimContradictedByFreshCheckGap:
         gaps = [g for g in response.gaps if g.kind == "claim_contradicted_by_fresh_check"]
         assert len(gaps) == 1
         assert gaps[0].label == "newly_discovered_failure"
+
+    def test_reachable_repo_root_is_reported_as_live_reconfirmed(self, tmp_path):
+        project_root, slug, contract_path = self._setup(tmp_path)
+        self._write_manifest(
+            project_root, slug, contract_path, run_id="fail1", outcome="FAIL",
+        )
+        response = ka.find_gaps(project_root, slug)
+        gaps = [g for g in response.gaps if g.kind == "claim_contradicted_by_fresh_check"]
+        assert len(gaps) == 1
+        assert "live-reconfirmed against the target checkout" in gaps[0].reason
+
+    def test_unreachable_repo_root_still_surfaces_the_gap_not_silently_dropped(self, tmp_path):
+        """Phase 89 Stage 89B corrective pass: a manifest item's own
+        recorded `repo_root` no longer existing (a cleaned-up scratch
+        checkout, a different machine) must never make a genuinely
+        still-pending, unreviewed contradiction vanish from `find_gaps`
+        -- that would give a false "no gaps found" impression for an
+        unresolved finding. The gap must still be reported, qualified
+        as not live-reconfirmed, never silently dropped and never
+        misrepresented as a fully live-reconfirmed FAIL."""
+        project_root, slug, contract_path = self._setup(tmp_path)
+        self._write_manifest(
+            project_root, slug, contract_path, run_id="fail1", outcome="FAIL",
+            repo_root_override=str(tmp_path / "this-checkout-does-not-exist"),
+        )
+        response = ka.find_gaps(project_root, slug)
+        gaps = [g for g in response.gaps if g.kind == "claim_contradicted_by_fresh_check"]
+        assert len(gaps) == 1
+        assert gaps[0].label == "regression"
+        assert "contract-relative only -- not live-reconfirmed" in gaps[0].reason
+
+    def test_unreachable_repo_root_tampered_result_still_excluded(self, tmp_path):
+        """The contract-relative-only fallback path must still catch a
+        genuinely tampered/invalid result -- an unreachable repo_root
+        is never treated as a free pass for whatever the manifest
+        claims."""
+        project_root, slug, contract_path = self._setup(tmp_path)
+        self._write_manifest(
+            project_root, slug, contract_path, run_id="fail1", outcome="FAIL",
+            raw_output_ok=False,
+            repo_root_override=str(tmp_path / "this-checkout-does-not-exist"),
+        )
+        response = ka.find_gaps(project_root, slug)
+        assert not [g for g in response.gaps if g.kind == "claim_contradicted_by_fresh_check"]
 
     def test_supporting_finding_is_never_reported_as_a_contradiction(self, tmp_path):
         """A pending item whose finding is a fresh PASS (`target_field

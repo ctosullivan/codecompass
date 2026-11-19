@@ -1766,13 +1766,19 @@ def _find_gaps_for_slug_contract(
             ))
 
     for pc in _sr.pending_contradicting_findings(project_root, s, repo_root=repo_root):
+        verification_note = (
+            "live-reconfirmed against the target checkout"
+            if pc.live_reconfirmed
+            else "contract-relative only -- not live-reconfirmed; the manifest item's own "
+                 "repo_root is unreachable right now"
+        )
         gaps.append(Gap(
             kind="claim_contradicted_by_fresh_check", subject_id=pc.claim_id, scope=pc.check_id,
             reason=(
                 f"{pc.claim_id} has a pending, unapplied source_reconciliation manifest item "
                 f"({pc.manifest_path}) proposing contradicting Evidence from check "
                 f"{pc.check_id!r} (contract {pc.contract_id!r}, run {pc.run_id!r}) that has not "
-                "yet been reviewed"
+                f"yet been reviewed ({verification_note})"
             ),
             label=pc.label,
         ))

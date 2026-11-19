@@ -1121,6 +1121,10 @@ class PendingContradiction:
     run_id: str
     label: str  # "regression" | "newly_discovered_failure"
     manifest_path: str
+    live_reconfirmed: bool = True  # False: the item's own recorded repo_root
+    # was unreachable, so only the contract-relative checks (contract hash,
+    # raw-output tamper, scope match) could run -- the tested-subject/
+    # test-input digests were trusted as recorded, not live-recomputed.
 
 
 def pending_contradicting_findings(
@@ -1158,6 +1162,16 @@ def pending_contradicting_findings(
       since it describes history *at detection time* (whether a
       historical `PASS` existed), which live re-validation of the fresh
       result alone could never recompute differently.
+    - when the item's own recorded `repo_root` is unreachable (a
+      cleaned-up scratch checkout, a different machine), this never
+      makes the finding vanish -- it falls through to a contract-
+      relative-only re-validation (the same pre-existing behaviour
+      `evaluate_result_precedence` already has for `repo_root=None`:
+      contract hash, raw-output tamper, and scope checks still run; only
+      the tested-subject/test-input digest recomputation is skipped) and
+      is still reported, with `live_reconfirmed=False`, rather than
+      either silently disappearing (the corrected defect) or being
+      misrepresented as a fully live-reconfirmed `FAIL`.
     - a finding whose own `(contract_id, check_id, run_id)` already has
       a canonical Evidence record cited in the *live* Claim's own
       `contradicting_evidence` field is already durably resolved --
@@ -1206,8 +1220,21 @@ def pending_contradicting_findings(
                 continue
             item_repo_root_str = item.get("repo_root", "")
             item_repo_root = Path(item_repo_root_str) if item_repo_root_str else repo_root
-            if item_repo_root is None or not item_repo_root.is_dir():
-                continue
+            live_reconfirmed = item_repo_root is not None and item_repo_root.is_dir()
+            # Phase 89 Stage 89B corrective pass: an unreachable repo_root
+            # (a scratch checkout cleaned up, a different machine, a
+            # transient mount) must never make a genuinely still-pending,
+            # unreviewed contradiction silently vanish from find_gaps --
+            # that would be a false "no gaps found" impression for an
+            # unresolved finding, the opposite failure mode from what this
+            # mechanism exists to prevent. Falling through with
+            # `validation_repo_root = None` below still runs the real
+            # contract-relative checks (contract hash, raw-output tamper,
+            # scope match) -- only the tested-subject/test-input digest
+            # recomputation is skipped, exactly `evaluate_result_
+            # precedence`'s own documented, pre-existing behaviour for a
+            # missing repo_root (never a new leniency invented here).
+            validation_repo_root = item_repo_root if live_reconfirmed else None
             contract_ids = item.get("contributing_contract_ids", [])
             check_ids = item.get("contributing_check_ids", [])
             run_ids = item.get("contributing_run_ids", [])
@@ -1251,7 +1278,7 @@ def pending_contradicting_findings(
                 try:
                     effective_outcome, _reason2 = _oracle.evaluate_result_precedence(
                         result, contract, check, contract_path=contract_path,
-                        repo_root=item_repo_root,
+                        repo_root=validation_repo_root,
                     )
                 finally:
                     os.chdir(previous_cwd)
@@ -1261,6 +1288,7 @@ def pending_contradicting_findings(
                     claim_id=record_id, check_id=check_id, contract_id=contract_id,
                     run_id=run_id, label=label,
                     manifest_path=str(manifest_path.relative_to(project_root)),
+                    live_reconfirmed=live_reconfirmed,
                 )
     return [found[k] for k in sorted(found)]
 
