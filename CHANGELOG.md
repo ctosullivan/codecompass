@@ -332,14 +332,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   exit gates (technical completion; a valid evaluation; the roadmap's
   own positive/negative result) kept explicit and never conflated.
   Corrects a real factual error found during drafting itself: the
-  packet's own `consistency.status` field does **not** distinguish
-  the pre-/post-Task-A knowledge state for the real `CL-BFS-004` (it
-  stays `"unconfirmed"` either way, since that Claim only ever covers
-  one of its contract's three required scopes) — the genuine,
-  mechanically-diffable signal is `consistency.evidence_currency`/
-  `reasons`, confirmed by direct reproduction across all four
-  pre/post × with/without-`repo_root` combinations. Stage 89C itself
-  remains unimplemented and unauthorised by this work.
+  packet's own `consistency.status`/`evidence_currency` fields do
+  **not** distinguish the pre-/post-Task-A knowledge state for the
+  real `CL-BFS-004` (both stay `"unconfirmed"`/`"absent"` either way,
+  since that Claim only ever covers one of its contract's three
+  required scopes) — the genuine, mechanically-diffable signal is
+  `consistency.reasons`'s own embedded count of required-scope gaps
+  (3 pre-Task-A, 2 post-Task-A, never naming the scope specifically),
+  confirmed by direct reproduction across all four pre/post ×
+  with/without-`repo_root` combinations.
+
+  **Independently reviewed** (`planning/retros/
+  _review-phase89-stage89c-plan.md`): first pass found one blocking
+  gap (§5.3's packet-generation commands had no actual mechanism to
+  select which disposable project root a `codecompass knowledge
+  context` call reads, since that CLI command resolves `project_root`
+  from the process's own `cwd` with no override flag — as written,
+  both calls would have produced byte-identical output regardless of
+  intent) plus two non-blocking issues (the `evidence_currency`
+  over-claim above, caught a second time by this independent review
+  after an earlier self-correction was itself still imprecise; and an
+  acceptance-test code comment describing a buggy-implementation
+  scenario structurally unreachable under the pinned `-> ReportSection`
+  return type). All three fixed (§5.3 now wraps each call in an
+  explicit `cd`-scoped subshell plus a `cmp` verification step; the
+  `reasons`-count correction applied consistently; the comment
+  rewritten to describe the realistic dedup/`exclude` risk the review
+  itself confirmed the test actually discriminates). A focused re-check
+  confirmed all three fixes and found no new issues — final verdict
+  **READY WITH NON-BLOCKING OBSERVATIONS**. Stage 89C itself remains
+  unimplemented and unauthorised by this work.
 - **Phase 89 — third planning amendment (Task A mechanism, Evidence
   identity, exit-gate semantics, baseline freshness) — still planning
   only**: a fresh, independent-orchestrator re-verification found the

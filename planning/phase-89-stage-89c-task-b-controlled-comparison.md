@@ -95,26 +95,38 @@ assumed from the pre-registration's own prose.
   contract, and `CL-BFS-004` only ever cites one of the contract's
   three required checks — the other two remain `unconfirmed` regardless
   of Task A, which is enough on its own to keep the aggregate `status`
-  at `"unconfirmed"` in both states. **The field that genuinely,
-  visibly differs pre/post — without needing `repo_root` at all — is
-  `evidence_currency` and `reasons`** (confirmed by the same
-  reproduction): pre-Task-A, `reasons` names the required-scope gap
-  (only source-kind Evidence exists for the overlapping-pattern scope);
-  post-Task-A, that same gap closes (a test-kind Evidence record now
-  exists for it), changing `evidence_currency`/`reasons`'s own content
-  even though the aggregate `status` string stays `"unconfirmed"`
-  either way. **This plan's own context-packet generation (§5.4) must
-  therefore diff `evidence_currency`/`reasons`, never `consistency.
-  status` alone, to detect the structural pre/post difference** — a
-  packet-comparison script that only checks whether `status` changed
-  would see no difference at all and wrongly conclude the two packets
-  are identical on this dimension. `repo_root` is still supplied for
-  both arms' packet generation (so any check that *does* depend on live
-  re-confirmation behaves identically and correctly in both arms — an
-  omission would be a silent, asymmetric-risk default, not because it
-  changes this one Claim's own `status` string), but it is not the
-  mechanism that makes the pre/post difference visible here. This is
-  stated as a hard requirement
+  at `"unconfirmed"` in both states. **Corrected a second time, after
+  an independent plan review re-reproduced this empirically and found
+  this plan's own prior correction (immediately below, in earlier
+  drafts) itself imprecise** (`planning/retros/
+  _review-phase89-stage89c-plan.md`): when `repo_root` is supplied
+  symmetrically to both packets (as §5.3 always does), `evidence_
+  currency` itself does **not** change either — it stays `"absent"`
+  in both the pre- and post-Task-A state, for the identical reason
+  `status` doesn't (the aggregate is computed from the whole contract's
+  three required scopes, not the one this Claim actually bears on).
+  **The only field that genuinely, mechanically differs is `reasons`'
+  own text — specifically its embedded *count* of required scopes with
+  no passing evidence** (e.g. "3 required scope(s) have no passing
+  evidence at all" pre-Task-A, "2 required scope(s)..." post-Task-A) —
+  confirmed by direct, repeated reproduction against real scratch
+  snapshots, both with and without `repo_root`. This count never names
+  the overlapping-pattern scope specifically (it is a bare count, not
+  a per-scope breakdown) — stated plainly so a future implementer does
+  not expect more granularity from this field than it actually
+  provides. **This plan's own context-packet generation (§5.4) must
+  therefore diff `reasons` specifically (a string/count comparison),
+  never `consistency.status`/`evidence_currency` alone, to detect the
+  structural pre/post difference** — a packet-comparison script that
+  only checks `status`/`evidence_currency` would see no difference at
+  all and wrongly conclude the two packets are identical on this
+  dimension. `repo_root` is still supplied for both arms' packet
+  generation (so any check that *does* depend on live re-confirmation
+  behaves identically and correctly in both arms — an omission would be
+  a silent, asymmetric-risk default), but it is not what makes the
+  pre/post difference visible here; the difference exists with or
+  without it, and is visible only in `reasons`' own count either way.
+  This is stated as a hard requirement
   below, not a nice-to-have.
 - **Independent-evaluation infrastructure**: `context-evaluator`
   (`.claude/agents/context-evaluator.md`) — produces a PASS / PASS
@@ -402,10 +414,10 @@ than trusted from the ADR's own prose).
 ### 5.3 Packet generation (identical code, two different data roots)
 
 ```
-# project_root_pre  = a disposable root containing $KN-pre's
+# PROJECT_ROOT_PRE  = a disposable root containing $KN-pre's own
 #                     planning/knowledge/, planning/contracts/
-# project_root_post = the equivalent root for $KN (post)
-# repo_root         = <scratch>/ledgerkit-packet-reference, a FOURTH,
+# PROJECT_ROOT_POST = the equivalent root for $KN (post)
+# REPO_ROOT_REFERENCE = <scratch>/ledgerkit-packet-reference, a FOURTH,
 #                      separate, read-only Ledgerkit clone pinned at
 #                      the same a7740fd0... (never ledgerkit-control/
 #                      -treatment/-for-reconciliation — this clone's
@@ -413,10 +425,28 @@ than trusted from the ADR's own prose).
 #                      consistency computation live-reconfirm against
 #                      a real checkout; it is never shown to either arm)
 
-codecompass knowledge context CL-BFS-004 --repo-root $REPO_ROOT_REFERENCE \
-    --json  > control-packet.json     # against project_root_pre
-codecompass knowledge context CL-BFS-004 --repo-root $REPO_ROOT_REFERENCE \
-    --json  > treatment-packet.json   # against project_root_post
+# `codecompass knowledge context` resolves project_root from the
+# process's own cwd (`cli.py::knowledge_context` calls
+# `get_context_packet(Path.cwd(), ...)` literally -- there is no
+# --project-root flag or env-var override). The two calls below MUST
+# run with different cwds, or both produce byte-identical output
+# regardless of which knowledge snapshot was intended -- confirmed as
+# a real, blocking gap in an earlier draft of this plan by independent
+# plan review (planning/retros/_review-phase89-stage89c-plan.md),
+# exactly the implicit-cwd-convention failure mode CLAUDE.md §1 (L-131,
+# Phase 88) already names. Each call below is therefore a subshell with
+# its own explicit `cd`, never a bare command relying on whatever the
+# ambient shell's cwd happens to be:
+
+( cd "$PROJECT_ROOT_PRE" && codecompass knowledge context CL-BFS-004 \
+    --repo-root "$REPO_ROOT_REFERENCE" --json ) > control-packet.json
+( cd "$PROJECT_ROOT_POST" && codecompass knowledge context CL-BFS-004 \
+    --repo-root "$REPO_ROOT_REFERENCE" --json ) > treatment-packet.json
+
+# Verify, do not assume, immediately after both calls: confirm the two
+# output files are NOT byte-identical (a future implementer's own
+# first mechanical check, before relying on anything downstream):
+#   cmp control-packet.json treatment-packet.json  # must report a difference
 ```
 
 (Confirmed live and matching exactly, this session: `codecompass
@@ -442,34 +472,36 @@ mechanically, do not eyeball:
    record `supporting_evidence` now cites (confirm its `id` resolves
    to `evidence_kind: test`, `what_it_shows` mentioning the
    overlapping-pattern check).
-2. The `CL-BFS-004` item's own `consistency.status`: **expected to stay
-   `"unconfirmed"` in both packets** (§1's own corrected finding —
-   `CL-BFS-004` only ever cites one of the contract's three required
-   checks, so the aggregate `status` never reaches `"current"` for it
-   regardless of Task A or `repo_root`; do not treat an identical
-   `status` string here as a contamination problem). The genuine,
-   required difference is in `consistency.evidence_currency`/
-   `consistency.reasons`: pre-Task-A, `reasons` names the still-open
-   gap for the overlapping-pattern scope; post-Task-A, that specific
-   gap's own wording is gone (a test-kind Evidence record now closes
-   it), even though `status` itself is unchanged. **If `evidence_
-   currency`/`reasons` are also byte-identical between the two
+2. The `CL-BFS-004` item's own `consistency.status` **and**
+   `consistency.evidence_currency`: **expected to stay identical in
+   both packets** (§1's own corrected finding, itself corrected a
+   second time after independent review — `CL-BFS-004` only ever cites
+   one of the contract's three required checks, so neither the
+   aggregate `status` nor `evidence_currency` ever reaches `"current"`
+   for it, regardless of Task A or `repo_root`; do not treat identical
+   `status`/`evidence_currency` values here as a contamination
+   problem). The genuine, required difference is in `consistency.
+   reasons`'s own text — specifically its embedded count of required
+   scopes with no passing evidence (3 pre-Task-A, 2 post-Task-A; it
+   never names the overlapping-pattern scope specifically, only the
+   count). **If `reasons` is also byte-identical between the two
    packets, this is the real blocking setup error** (most likely
    cause: §5.2's post-reconciliation snapshot was not actually
-   generated/applied correctly) — stop and fix before dispatching
-   either arm, per §5's own "if the intended isolation cannot be
-   achieved, identify this as an experimental validity blocker"
-   instruction (§10 below).
+   generated/applied correctly, or §5.3's two calls did not actually
+   run against different project roots — re-check the `cmp` step at
+   the end of §5.3 first) — stop and fix before dispatching either
+   arm, per §5's own "if the intended isolation cannot be achieved,
+   identify this as an experimental validity blocker" instruction
+   (§10 below).
 3. `CL-BFS-004`'s own `summary` field: **byte-identical** across both
    packets (the authored statement is never rewritten — confirmed, not
    assumed, §5.2).
 4. Every other item's own `summary`/`consistency`: byte-identical
    (neither packet differs anywhere outside the `CL-BFS-004` subject's
-   own `evidence_currency`/`reasons` and its newly-added Evidence
-   neighbour item).
+   own `reasons` count and its newly-added Evidence neighbour item).
 
 **If the diff shows anything beyond item 1 (the new Evidence item) and
-item 2's own `evidence_currency`/`reasons` change above**: this is a
+item 2's own `reasons` count change above**: this is a
 contamination finding. Do not proceed to dispatch either arm. Document
 the exact unexpected difference and treat it as a blocker requiring a
 separately documented decision (§4 below), never silently patched by
@@ -484,8 +516,8 @@ Per §1's own finding: `CL-BFS-004`'s own authored `statement` text
 (present, byte-identical, in **both** packets) still describes the
 overlapping-pattern behaviour as "not yet" independently tested, even
 in the treatment packet where the record's own *structured* fields
-(`consistency.evidence_currency`/`reasons`, and the sibling Evidence
-item's own `summary`) say otherwise. **This is not a between-arm contamination risk** — the
+(`consistency.reasons`'s own lower required-scope-gap count, and the
+sibling Evidence item's own `summary`) say otherwise. **This is not a between-arm contamination risk** — the
 confound rule (§1's own "equal raw access" check, `L-027`) is about
 asymmetry between arms, and this stale text is present identically in
 both. It is a **context-quality-of-both-arms** consideration: an agent
@@ -541,12 +573,26 @@ class TestCombinedSectionAcceptance(unittest.TestCase):
         # "groceries" alone matches only expenses:food:groceries (150.00).
         # "food" alone matches BOTH expenses:food:groceries (150.00) AND
         # expenses:food:coffee (9.00) -- already-established behaviour
-        # (CL-BFS-004). A naive implementation that sums each ORIGINAL
-        # section's own already-computed subtotal (150 + 159 = 309)
-        # double-counts the groceries posting across the section
-        # boundary. The correct implementation unions the account
-        # patterns into ONE section and lets the existing per-posting
-        # OR-gate run once (159: groceries once, coffee once).
+        # (CL-BFS-004). The correct implementation unions the two
+        # sections' own account patterns into ONE new ReportSection and
+        # relies entirely on balance_from_spec's existing per-posting
+        # OR-gate to avoid double-counting groceries (159: groceries
+        # once, coffee once) -- it needs no deduplication logic of its
+        # own. An implementation that instead distrusts the existing
+        # gate and adds its own defensive deduplication (e.g. filtering
+        # or excluding a pattern it believes is now "redundant" because
+        # another pattern in the combined set already matches the same
+        # posting) risks silently dropping a pattern that is NOT
+        # actually redundant for every posting -- correctness review
+        # independently confirmed this test discriminates exactly that
+        # realistic failure mode (an incorrect, unneeded dedup/exclude
+        # attempt), not only the specific wrong-arithmetic scenario a
+        # much earlier draft of this comment described (which turned
+        # out to be structurally unreachable given this function's own
+        # pinned `-> ReportSection` return type, which never itself
+        # computes a subtotal at all -- flagged and corrected by
+        # independent plan review, `planning/retros/
+        # _review-phase89-stage89c-plan.md`).
         groceries = ReportSection("Groceries", accounts=("groceries",))
         food = ReportSection("Food", accounts=("food",))
         combined = ReportSpec.with_combined_section("Groceries and Food", groceries, food)
@@ -842,13 +888,14 @@ same way.
   a tool-call error unrelated to the task itself); a second failure is
   reported as such, not retried again.
 - **§5.4's contamination check fails** (packets differ outside the
-  expected fields, or `consistency.evidence_currency`/`reasons` do not
-  actually diverge for `CL-BFS-004`): stop before dispatching either
-  arm. This is an experimental-validity blocker (§1's own instruction),
-  not something to patch by hand. Fix the packet-generation call (most
-  likely cause: the post-reconciliation snapshot (§5.2) was built
-  incorrectly, or applied to the wrong copy),
-  re-run §5.4, and only proceed once clean.
+  expected fields, or `consistency.reasons` does not actually diverge
+  for `CL-BFS-004`): stop before dispatching either arm. This is an
+  experimental-validity blocker (§1's own instruction), not something
+  to patch by hand. Fix the packet-generation call (most likely cause:
+  §5.3's two calls did not run against different project roots — check
+  the `cmp` step first; or the post-reconciliation snapshot (§5.2) was
+  built incorrectly, or applied to the wrong copy), re-run §5.4, and
+  only proceed once clean.
 - **§7.7's boundary check finds a read-scope violation** for either
   arm: report it in Outcome 2 as a procedural-fidelity failure. If the
   violation plausibly gave one arm decisive information the other
