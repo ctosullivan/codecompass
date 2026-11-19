@@ -8,6 +8,7 @@ from typer.testing import CliRunner
 
 import codecompass.cli as cli_module
 from codecompass import enrichment, graph, oracle, relation_enrichment
+from codecompass import knowledge_intermediate as ki
 from codecompass.cli import app
 from codecompass.config import load_vendor_config
 from codecompass.core import VendorDigest
@@ -2688,6 +2689,104 @@ def test_knowledge_trace_results_repo_root_option_forwards_to_knowledge_api(
 
     assert without_payload["results"][0]["consistency"]["status"] == "unconfirmed"
     assert with_payload["results"][0]["consistency"]["status"] == "current"
+
+
+def test_knowledge_gaps_plain_text_output_shows_the_label_not_swallowed_by_rich_markup(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Phase 89 Stage 89B, caught by independent audit: an unescaped
+    `f" [{g.label}]"` suffix is itself valid `rich` markup syntax (an
+    unknown/empty tag) that `console.print` silently drops in its
+    non-`--json` path -- defeating the whole point of the new
+    `claim_contradicted_by_fresh_check` gap kind's own label for a human
+    reading plain-text CLI output. This is a real CLI-boundary
+    regression test (`CLAUDE.md` §1 L-021), not only a library-level
+    unit test of `find_gaps` itself."""
+    monkeypatch.chdir(tmp_path)
+    slug = "clidemo"
+    contract_path = tmp_path / "planning" / "contracts" / slug / "oracle-contract.yaml"
+    import yaml
+
+    contract_path.parent.mkdir(parents=True, exist_ok=True)
+    contract_path.write_text(
+        yaml.safe_dump({
+            "schema_version": 1, "contract_id": "REQ-CLIGAP-001", "tested_paths": ["impl.py"],
+            "checks": [{
+                "check_id": "chk-a", "scope": "scope A", "execution_provider": "pytest",
+                "check_reference": "tests/test_impl.py::test_ok",
+                "test_input_paths": ["tests/test_impl.py"], "required": True,
+            }],
+        }, sort_keys=False),
+        encoding="utf-8",
+    )
+    (tmp_path / "impl.py").write_text("def f():\n    return 1\n", encoding="utf-8")
+    (tmp_path / "tests").mkdir(exist_ok=True)
+    (tmp_path / "tests" / "test_impl.py").write_text(
+        "def test_ok():\n    assert True\n", encoding="utf-8"
+    )
+    results_dir = tmp_path / "planning" / "contracts" / slug / "results"
+    result_path = results_dir / "chk-a--r1.yaml"
+    results_dir.mkdir(parents=True, exist_ok=True)
+    raw_path = results_dir / "chk-a-r1-raw.txt"
+    raw_path.write_text("ok", encoding="utf-8")
+    result = oracle.OracleResult(
+        schema_version=1, run_id="r1", contract_id="REQ-CLIGAP-001", check_id="chk-a",
+        scope="scope A", baseline_id=None,
+        tested_subject_digest=oracle.compute_tree_digest(tmp_path, ["impl.py"]),
+        oracle_contract_id="REQ-CLIGAP-001",
+        oracle_contract_content_hash=oracle.sha256_file(contract_path),
+        test_input_digest=oracle.compute_tree_digest(tmp_path, ["tests/test_impl.py"]),
+        raw_output_ref=str(raw_path), raw_output_sha256=oracle.sha256_file(raw_path),
+        outcome="FAIL", executed_at="2026-11-19T00:00:00Z", execution_provider="pytest",
+        environment_descriptor=None, invalid_reason=None,
+    )
+    oracle.write_oracle_result(result_path, result)
+
+    slug_dir = tmp_path / "planning" / "knowledge" / slug
+    slug_dir.mkdir(parents=True, exist_ok=True)
+    (slug_dir / "CL-CLIGAP-001.yaml").write_text(
+        "id: CL-CLIGAP-001\nkind: claim\nstatement: x\n"
+        "supporting_evidence: []\ncontradicting_evidence: []\nstatus: supported\n",
+        encoding="utf-8",
+    )
+
+    rdir = ki.reconciliation_dir(tmp_path, slug)
+    rdir.mkdir(parents=True, exist_ok=True)
+    manifest_data = {
+        "created": "2026-11-19T00:00:00+00:00", "slug": slug,
+        "manifest_id": f"{slug}@test-manifest",
+        "items": [{
+            "kind": "source_reconciliation", "record_id": "CL-CLIGAP-001", "base_claim_hash": "",
+            "repo_root": str(tmp_path), "contributing_source_paths": [],
+            "contributing_source_hashes": [], "contributing_contract_ids": ["REQ-CLIGAP-001"],
+            "contributing_check_ids": ["chk-a"], "contributing_run_ids": ["r1"],
+            "contributing_raw_output_refs": [""], "contributing_labels": ["regression"],
+            "contributing_target_fields": ["contradicting_evidence"],
+            "contributing_what_it_shows": ["x"], "contributing_repository_revisions": [""],
+            "state": "pending", "decision": "undecided",
+        }],
+        "affected_claims": [],
+    }
+    (rdir / "test-manifest.toml").write_text(
+        ki._serialize_manifest(manifest_data), encoding="utf-8"
+    )
+
+    json_result = runner.invoke(app, ["knowledge", "gaps", slug, "--json"])
+    assert json_result.exit_code == 0, json_result.output
+    payload = json.loads(json_result.output)
+    gaps = [g for g in payload["gaps"] if g["kind"] == "claim_contradicted_by_fresh_check"]
+    assert len(gaps) == 1
+    assert gaps[0]["label"] == "regression"
+
+    plain_result = runner.invoke(app, ["knowledge", "gaps", slug])
+    assert plain_result.exit_code == 0, plain_result.output
+    assert "claim_contradicted_by_fresh_check" in plain_result.output
+    # The actual regression this test guards against: the label must
+    # genuinely appear in the plain-text output, not be silently
+    # swallowed by `rich` interpreting an unescaped "[regression]" as
+    # markup.
+    assert "regression" in plain_result.output
+    assert "[regression]" in plain_result.output
 
 
 # ---------------------------------------------------------------------------

@@ -1109,6 +1109,162 @@ def write_source_reconciliation_manifest(
     )
 
 
+@dataclass
+class PendingContradiction:
+    """One still-genuinely-open contradicting finding, surfaced by
+    `pending_contradicting_findings` for `knowledge_api.find_gaps`'s new
+    `claim_contradicted_by_fresh_check` gap kind (Phase 89 Stage 89B,
+    plan §5.4)."""
+    claim_id: str
+    check_id: str
+    contract_id: str
+    run_id: str
+    label: str  # "regression" | "newly_discovered_failure"
+    manifest_path: str
+
+
+def pending_contradicting_findings(
+    project_root: Path, slug: str, *, repo_root: Path | None = None,
+) -> list[PendingContradiction]:
+    """Scans every manifest already written for `slug` (the established
+    read-only scanning convention this module's own callers already use
+    elsewhere, e.g. `knowledge_intermediate._existing_pending_doc_
+    region_edit_keys`) for a still-genuinely-open `source_reconciliation`
+    item's own contradicting contributing finding(s) -- the data behind
+    `find_gaps`'s new `claim_contradicted_by_fresh_check` gap kind (plan
+    §5.4). Purely read-only: never writes to a manifest, a Claim, or
+    anything else.
+
+    Never trusts a manifest item's own cached fields at face value:
+
+    - an item already `state == "applied"`, or `decision == "reject"`,
+      is never genuinely pending -- skipped immediately, mirroring
+      `apply_manifest`'s own identical checks.
+    - the target Claim's own *current* scope category is independently
+      re-checked (`claim_scope_category`) -- an aggregate/superseded
+      Claim is never reported here, since it is already visible via
+      this same manifest's own `affected_claims` array; reporting it a
+      second time, differently, under this new gap kind would be
+      confusing, not merely redundant, and this mechanism must never
+      promote a broader Claim's own status either way (dispatch's own
+      explicit "respect the Stage 89A Claim-scope eligibility rules").
+    - the cited `OracleResult` is independently re-parsed and
+      re-validated against the *live* contract (`evaluate_result_
+      precedence`) -- an invalid, tampered, or since-superseded result
+      is excluded, never reported as a trustworthy pending contradiction.
+      Only a finding that still, genuinely, re-validates as `FAIL` is
+      reported; the manifest's own cached `"regression"`/`"newly_
+      discovered_failure"` label is still used for that distinction,
+      since it describes history *at detection time* (whether a
+      historical `PASS` existed), which live re-validation of the fresh
+      result alone could never recompute differently.
+    - a finding whose own `(contract_id, check_id, run_id)` already has
+      a canonical Evidence record cited in the *live* Claim's own
+      `contradicting_evidence` field is already durably resolved --
+      applied via this exact manifest item, a sibling manifest citing
+      the identical run (the collision/duplicate-manifest case), or a
+      hand-applied edit -- even if this particular manifest file's own
+      `state` field was never updated to say so. Skipped.
+
+    Deterministically deduplicated by `(claim_id, check_id, run_id)`
+    across every manifest file scanned for this slug, sorted for stable
+    output -- the same run reported by two different pending manifests
+    (e.g. one superseded by a re-run of `verify-changes`) is surfaced
+    exactly once.
+    """
+    import tomllib
+
+    rdir = _ki.reconciliation_dir(project_root, slug)
+    if not rdir.is_dir():
+        return []
+    sdir = _ki.slug_dir(project_root, slug)
+    records = _ki.load_slug_records(sdir)
+    contract_path = project_root / "planning" / "contracts" / slug / "oracle-contract.yaml"
+    try:
+        contract = _oracle.parse_oracle_contract(contract_path)
+    except (_oracle.OracleSchemaError, OSError):
+        return []
+    results_dir = project_root / "planning" / "contracts" / slug / "results"
+
+    found: dict[tuple[str, str, str], PendingContradiction] = {}
+    for manifest_path in sorted(rdir.glob("*.toml")):
+        try:
+            data = tomllib.loads(manifest_path.read_text(encoding="utf-8"))
+        except (tomllib.TOMLDecodeError, OSError):
+            continue
+        for item in data.get("items", []):
+            if item.get("kind") != "source_reconciliation":
+                continue
+            if item.get("state") == "applied" or item.get("decision") == "reject":
+                continue
+            record_id = item.get("record_id", "")
+            claim = records.get(record_id)
+            if claim is None:
+                continue
+            scope_category, _reason = _ki.claim_scope_category(claim)
+            if scope_category != "eligible":
+                continue
+            item_repo_root_str = item.get("repo_root", "")
+            item_repo_root = Path(item_repo_root_str) if item_repo_root_str else repo_root
+            if item_repo_root is None or not item_repo_root.is_dir():
+                continue
+            contract_ids = item.get("contributing_contract_ids", [])
+            check_ids = item.get("contributing_check_ids", [])
+            run_ids = item.get("contributing_run_ids", [])
+            labels = item.get("contributing_labels", [])
+            target_fields = item.get("contributing_target_fields", [])
+            for i in range(len(check_ids)):
+                if i >= len(target_fields) or target_fields[i] != "contradicting_evidence":
+                    continue
+                contract_id = contract_ids[i] if i < len(contract_ids) else ""
+                check_id = check_ids[i]
+                run_id = run_ids[i] if i < len(run_ids) else ""
+                label = labels[i] if i < len(labels) else "regression"
+                key = (record_id, check_id, run_id)
+                if key in found:
+                    continue
+                existing_ev = _ki._find_existing_evidence_for_run(
+                    project_root, records, contract_id, check_id, run_id
+                )
+                if existing_ev is not None:
+                    live_contradicting = _ki._extract_id_strings(
+                        claim.fields.get("contradicting_evidence", "")
+                    )
+                    if existing_ev in live_contradicting:
+                        continue  # already durably resolved; stale manifest entry
+                result_path = results_dir / f"{check_id}--{run_id}.yaml"
+                if not result_path.is_file():
+                    continue
+                try:
+                    result = _oracle.parse_oracle_result(result_path)
+                except _oracle.OracleSchemaError:
+                    continue
+                if (result.contract_id, result.check_id, result.run_id) != (
+                    contract_id, check_id, run_id,
+                ):
+                    continue
+                check = contract.check_by_id(check_id)
+                if check is None:
+                    continue
+                previous_cwd = Path.cwd()
+                os.chdir(project_root)
+                try:
+                    effective_outcome, _reason2 = _oracle.evaluate_result_precedence(
+                        result, contract, check, contract_path=contract_path,
+                        repo_root=item_repo_root,
+                    )
+                finally:
+                    os.chdir(previous_cwd)
+                if effective_outcome != "FAIL":
+                    continue
+                found[key] = PendingContradiction(
+                    claim_id=record_id, check_id=check_id, contract_id=contract_id,
+                    run_id=run_id, label=label,
+                    manifest_path=str(manifest_path.relative_to(project_root)),
+                )
+    return [found[k] for k in sorted(found)]
+
+
 def advance_baselines_for_applied_item(
     project_root: Path, slug: str, item: dict, *, manifest_items: list[dict],
 ) -> None:

@@ -28,6 +28,7 @@ from typing import NoReturn
 
 import typer
 from rich.console import Console
+from rich.markup import escape as _rich_escape
 from rich.table import Table
 
 from codecompass import (
@@ -1963,7 +1964,17 @@ def _print_api_response(response: knowledge_api.ApiResponse, json_output: bool) 
             for reason in r.consistency.reasons:
                 console.print(f"    - {reason}")
     for g in response.gaps:
-        console.print(f"[red]gap[/red] ({g.kind}) {g.subject_id or ''}: {g.reason}")
+        # `_rich_escape` must wrap the literal brackets too, not just
+        # the label text inside them -- escaping only `g.label` leaves
+        # the surrounding "[" "]" characters themselves as live rich
+        # markup syntax (an unknown/empty tag), which `console.print`
+        # silently swallows rather than printing, defeating this
+        # label's whole purpose in the plain-text CLI path (confirmed
+        # by direct independent audit, Phase 89 Stage 89B, which also
+        # caught an earlier, insufficient fix attempt that escaped only
+        # the inner text).
+        label_suffix = _rich_escape(f" [{g.label}]") if g.label else ""
+        console.print(f"[red]gap[/red] ({g.kind}) {g.subject_id or ''}: {g.reason}{label_suffix}")
     if not response.results and not response.gaps:
         console.print("[yellow]nothing found[/yellow]")
 

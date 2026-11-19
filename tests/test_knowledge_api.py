@@ -1102,6 +1102,239 @@ class TestFindGaps:
         assert any(g.subject_id == "REQ-DEPDANGLE-001" and "CL-NOPE-888" in g.reason for g in dangling)
 
 
+class TestClaimContradictedByFreshCheckGap:
+    """Phase 89 Stage 89B (plan §5.4): `find_gaps`'s new `claim_
+    contradicted_by_fresh_check` gap kind -- a Claim with a still-
+    genuinely-pending, unapplied `source_reconciliation` manifest item
+    proposing contradicting Evidence, labelled `"regression"`/`"newly_
+    discovered_failure"`. Fixtures hand-build the manifest directly
+    (mirroring this file's own `_write_stale_citation_fixture`
+    convention) rather than driving the full `propose_reconciliation`
+    pipeline, since this gap kind's own job is to *surface* a pending
+    item correctly, independent of how that item was produced."""
+
+    def _setup(self, tmp_path, slug="gapdemo", claim_fields: dict | None = None):
+        project_root = tmp_path
+        (project_root / "impl.py").write_text("def f():\n    return 1\n", encoding="utf-8")
+        (project_root / "tests").mkdir(exist_ok=True)
+        (project_root / "tests" / "test_impl.py").write_text(
+            "def test_ok():\n    assert True\n", encoding="utf-8"
+        )
+        contract_path = project_root / "planning" / "contracts" / slug / "oracle-contract.yaml"
+        _write_contract(contract_path, contract_id="REQ-GAP-001", check_id="chk-a")
+        slug_dir = project_root / "planning" / "knowledge" / slug
+        fields = {
+            "id": "CL-GAP-001", "kind": "claim", "statement": "x",
+            "supporting_evidence": [], "contradicting_evidence": [], "status": "supported",
+        }
+        fields.update(claim_fields or {})
+        _write_flat(slug_dir / "CL-GAP-001.yaml", fields)
+        return project_root, slug, contract_path
+
+    def _write_manifest(
+        self, project_root, slug, contract_path, *, claim_id="CL-GAP-001", check_id="chk-a",
+        run_id="r1", contract_id="REQ-GAP-001", outcome="FAIL", state="pending",
+        decision="undecided", label="regression", manifest_name="m1",
+        raw_output_ok=True,
+    ):
+        results_dir = project_root / "planning" / "contracts" / slug / "results"
+        result_path = results_dir / f"{check_id}--{run_id}.yaml"
+        _write_result(
+            result_path, contract_path, contract_id=contract_id, check_id=check_id,
+            outcome=outcome, run_id=run_id,
+            tested_subject_digest=oracle.compute_tree_digest(project_root, ["impl.py"]),
+            test_input_digest=oracle.compute_tree_digest(project_root, ["tests/test_impl.py"]),
+        )
+        if not raw_output_ok:
+            # Tamper with the already-written raw output file so its
+            # content no longer matches the result's own recorded
+            # raw_output_sha256 -- `evaluate_result_precedence` must
+            # then report INVALID, and this pending finding must never
+            # be surfaced as a trustworthy contradiction.
+            result = oracle.parse_oracle_result(result_path)
+            Path(result.raw_output_ref).write_text("tampered", encoding="utf-8")
+        target_field = "contradicting_evidence" if outcome == "FAIL" else "supporting_evidence"
+        data = {
+            "created": "2026-11-19T00:00:00+00:00",
+            "slug": slug,
+            "manifest_id": f"{slug}@{manifest_name}",
+            "items": [{
+                "kind": "source_reconciliation",
+                "record_id": claim_id,
+                "base_claim_hash": "",
+                "repo_root": str(project_root),
+                "contributing_source_paths": [],
+                "contributing_source_hashes": [],
+                "contributing_contract_ids": [contract_id],
+                "contributing_check_ids": [check_id],
+                "contributing_run_ids": [run_id],
+                "contributing_raw_output_refs": [""],
+                "contributing_labels": [label],
+                "contributing_target_fields": [target_field],
+                "contributing_what_it_shows": ["x"],
+                "contributing_repository_revisions": [""],
+                "state": state,
+                "decision": decision,
+            }],
+            "affected_claims": [],
+        }
+        manifest_path = ki.reconciliation_dir(project_root, slug) / f"{manifest_name}.toml"
+        manifest_path.parent.mkdir(parents=True, exist_ok=True)
+        manifest_path.write_text(ki._serialize_manifest(data), encoding="utf-8")
+        return manifest_path, result_path
+
+    def test_pending_regression_surfaced_with_correct_label(self, tmp_path):
+        project_root, slug, contract_path = self._setup(tmp_path)
+        self._write_manifest(
+            project_root, slug, contract_path, run_id="fail1", outcome="FAIL",
+            label="regression",
+        )
+        response = ka.find_gaps(project_root, slug)
+        gaps = [g for g in response.gaps if g.kind == "claim_contradicted_by_fresh_check"]
+        assert len(gaps) == 1
+        assert gaps[0].subject_id == "CL-GAP-001"
+        assert gaps[0].scope == "chk-a"
+        assert gaps[0].label == "regression"
+        assert "CL-GAP-001" in gaps[0].reason and "chk-a" in gaps[0].reason
+
+    def test_pending_newly_discovered_failure_surfaced_with_correct_label(self, tmp_path):
+        project_root, slug, contract_path = self._setup(tmp_path)
+        self._write_manifest(
+            project_root, slug, contract_path, run_id="fail1", outcome="FAIL",
+            label="newly_discovered_failure",
+        )
+        response = ka.find_gaps(project_root, slug)
+        gaps = [g for g in response.gaps if g.kind == "claim_contradicted_by_fresh_check"]
+        assert len(gaps) == 1
+        assert gaps[0].label == "newly_discovered_failure"
+
+    def test_supporting_finding_is_never_reported_as_a_contradiction(self, tmp_path):
+        """A pending item whose finding is a fresh PASS (`target_field
+        == "supporting_evidence"`) is never confused with a pending
+        contradiction -- only `target_field == "contradicting_evidence"`
+        findings ever produce this gap kind."""
+        project_root, slug, contract_path = self._setup(tmp_path)
+        self._write_manifest(
+            project_root, slug, contract_path, run_id="pass1", outcome="PASS",
+            label="newly_covered",
+        )
+        response = ka.find_gaps(project_root, slug)
+        assert not [g for g in response.gaps if g.kind == "claim_contradicted_by_fresh_check"]
+
+    def test_already_applied_item_is_never_reported(self, tmp_path):
+        project_root, slug, contract_path = self._setup(tmp_path)
+        self._write_manifest(
+            project_root, slug, contract_path, run_id="fail1", outcome="FAIL",
+            state="applied", decision="accept",
+        )
+        response = ka.find_gaps(project_root, slug)
+        assert not [g for g in response.gaps if g.kind == "claim_contradicted_by_fresh_check"]
+
+    def test_rejected_item_is_never_reported(self, tmp_path):
+        project_root, slug, contract_path = self._setup(tmp_path)
+        self._write_manifest(
+            project_root, slug, contract_path, run_id="fail1", outcome="FAIL",
+            decision="reject",
+        )
+        response = ka.find_gaps(project_root, slug)
+        assert not [g for g in response.gaps if g.kind == "claim_contradicted_by_fresh_check"]
+
+    def test_tampered_result_is_excluded_not_reported(self, tmp_path):
+        """An invalid/tampered OracleResult (raw output content no
+        longer matches its own recorded hash) must never be reported as
+        a trustworthy pending contradiction -- the live re-validation,
+        not the manifest's own cached fields, decides."""
+        project_root, slug, contract_path = self._setup(tmp_path)
+        self._write_manifest(
+            project_root, slug, contract_path, run_id="fail1", outcome="FAIL",
+            raw_output_ok=False,
+        )
+        response = ka.find_gaps(project_root, slug)
+        assert not [g for g in response.gaps if g.kind == "claim_contradicted_by_fresh_check"]
+
+    def test_duplicate_pending_manifests_deduplicated_to_one_gap(self, tmp_path):
+        """Two separate manifest files both citing the exact same
+        `(claim_id, check_id, run_id)` -- e.g. a re-run of `verify-
+        changes` before the first manifest was ever reviewed -- produce
+        exactly one gap, not two."""
+        project_root, slug, contract_path = self._setup(tmp_path)
+        self._write_manifest(
+            project_root, slug, contract_path, run_id="fail1", outcome="FAIL",
+            manifest_name="m1",
+        )
+        self._write_manifest(
+            project_root, slug, contract_path, run_id="fail1", outcome="FAIL",
+            manifest_name="m2",
+        )
+        response = ka.find_gaps(project_root, slug)
+        gaps = [g for g in response.gaps if g.kind == "claim_contradicted_by_fresh_check"]
+        assert len(gaps) == 1
+
+    def test_stale_duplicate_manifest_already_resolved_via_sibling_is_not_reported(self, tmp_path):
+        """One of two colliding/duplicate manifests citing the same run
+        was already applied (a real Evidence record exists, cited in
+        the Claim's own `contradicting_evidence`) -- the *other*,
+        never-updated manifest file's own `state` still literally reads
+        `"pending"`, but this is not a genuine open contradiction; it
+        must not be reported a second time."""
+        project_root, slug, contract_path = self._setup(tmp_path)
+        _, result_path = self._write_manifest(
+            project_root, slug, contract_path, run_id="fail1", outcome="FAIL",
+            manifest_name="m-stale-pending",  # never updated to state=applied
+        )
+        slug_dir = project_root / "planning" / "knowledge" / slug
+        _write_flat(slug_dir / "EV-GAP-999.yaml", {
+            "id": "EV-GAP-999", "kind": "evidence", "evidence_kind": "test",
+            "test_ref": f'"{result_path.relative_to(project_root)}"', "status": "current",
+        })
+        _write_flat(slug_dir / "CL-GAP-001.yaml", {
+            "id": "CL-GAP-001", "kind": "claim", "statement": "x",
+            "supporting_evidence": [], "contradicting_evidence": ["EV-GAP-999"],
+            "status": "conflicting",
+        })
+        response = ka.find_gaps(project_root, slug)
+        assert not [g for g in response.gaps if g.kind == "claim_contradicted_by_fresh_check"]
+
+    def test_aggregate_claim_is_never_reported_here(self, tmp_path):
+        """A Claim whose own `depends_on` names other Claims is excluded
+        from this gap kind -- it is already visible via this same
+        manifest's own `affected_claims` array instead (Stage 89A's own
+        Claim-scope eligibility rule, respected here too)."""
+        project_root, slug, contract_path = self._setup(
+            tmp_path, claim_fields={"depends_on": ["CL-GAP-002"]},
+        )
+        self._write_manifest(
+            project_root, slug, contract_path, run_id="fail1", outcome="FAIL",
+        )
+        response = ka.find_gaps(project_root, slug)
+        assert not [g for g in response.gaps if g.kind == "claim_contradicted_by_fresh_check"]
+
+    def test_superseded_claim_is_never_reported_here(self, tmp_path):
+        project_root, slug, contract_path = self._setup(
+            tmp_path, claim_fields={"status": "superseded"},
+        )
+        self._write_manifest(
+            project_root, slug, contract_path, run_id="fail1", outcome="FAIL",
+        )
+        response = ka.find_gaps(project_root, slug)
+        assert not [g for g in response.gaps if g.kind == "claim_contradicted_by_fresh_check"]
+
+    def test_scan_is_read_only(self, tmp_path):
+        """`find_gaps` never mutates a manifest file or a canonical
+        record while scanning for this gap kind."""
+        project_root, slug, contract_path = self._setup(tmp_path)
+        manifest_path, _ = self._write_manifest(
+            project_root, slug, contract_path, run_id="fail1", outcome="FAIL",
+        )
+        claim_path = project_root / "planning" / "knowledge" / slug / "CL-GAP-001.yaml"
+        before_manifest = manifest_path.read_text(encoding="utf-8")
+        before_claim = claim_path.read_text(encoding="utf-8")
+        response = ka.find_gaps(project_root, slug)
+        assert any(g.kind == "claim_contradicted_by_fresh_check" for g in response.gaps)
+        assert manifest_path.read_text(encoding="utf-8") == before_manifest
+        assert claim_path.read_text(encoding="utf-8") == before_claim
+
+
 # ---------------------------------------------------------------------------
 # get_context_packet()
 # ---------------------------------------------------------------------------

@@ -60,6 +60,7 @@ from pathlib import Path, PurePosixPath
 
 from codecompass import knowledge_intermediate as _ki
 from codecompass import oracle as _oracle
+from codecompass import source_reconciliation as _sr
 
 _DB_FILENAME = "context-graph.db"
 
@@ -138,10 +139,15 @@ class KnowledgeResult:
 class Gap:
     kind: str  # "unverified_required_scope" | "contradiction" | "stale_test_citation" |
     # "missing_contract" | "missing_evidence" | "dangling_evidence_reference" |
-    # "dangling_dependency_reference"
+    # "dangling_dependency_reference" | "claim_contradicted_by_fresh_check"
     subject_id: str | None
     scope: str | None
     reason: str
+    # Phase 89 Stage 89B, plan §5.4: additive, used only by
+    # "claim_contradicted_by_fresh_check" -- "regression" (a historical PASS
+    # existed before the fresh FAIL) or "newly_discovered_failure" (it did
+    # not). None for every other, pre-existing gap kind.
+    label: str | None = None
 
 
 @dataclass
@@ -1559,14 +1565,32 @@ def find_gaps(project_root: Path, slug: str | None = None, *, repo_root: Path | 
       an id that resolves to no real record anywhere (`trace_evidence`'s
       own Requirement-level detection, decisions/0093 -- same semantics,
       applied corpus-wide).
+    - `claim_contradicted_by_fresh_check` (Phase 89 Stage 89B, plan §5.4)
+      -- a Claim with a still-genuinely-pending, unapplied
+      `source_reconciliation` manifest item (`source_reconciliation.
+      pending_contradicting_findings`) proposing contradicting Evidence
+      against it: a fresh, independently re-validated `FAIL` for some
+      required check has been detected and persisted but not yet
+      reviewed. Carries the new `Gap.label` field, `"regression"` (a
+      historical `PASS` existed for this exact check before the fresh
+      `FAIL`) or `"newly_discovered_failure"` (it did not) -- so a human
+      is never told something broke that was never shown to have worked.
+      Already-applied and already-rejected items are never reported;
+      neither is one targeting an aggregate/superseded Claim (visible
+      instead via that same manifest's own `affected_claims` array) or
+      one whose cited result no longer re-validates live. Read-only --
+      this scan never writes anything, including to any manifest file.
 
     `repo_root`, when supplied, is threaded into every oracle-result
     evaluation below -- `derive_epistemic_profile` (unchanged) for
-    `unverified_required_scope`, and `aggregate_contract`/
-    `evaluate_result_precedence` for `stale_test_citation` (decisions/
-    0093 -- previously dropped for the latter two, so a `stale_test_
-    citation`'s own "a different, currently-passing result exists" claim
-    could describe a result that was never actually live-reconfirmed).
+    `unverified_required_scope`, `aggregate_contract`/`evaluate_result_
+    precedence` for `stale_test_citation` (decisions/0093 -- previously
+    dropped for the latter two, so a `stale_test_citation`'s own "a
+    different, currently-passing result exists" claim could describe a
+    result that was never actually live-reconfirmed), and `source_
+    reconciliation.pending_contradicting_findings` for `claim_
+    contradicted_by_fresh_check` (used only as a fallback when a
+    manifest item's own recorded `repo_root` is missing).
     """
     slugs = [slug] if slug else _ki._list_slugs(project_root)
     records = _all_records(project_root)
@@ -1740,6 +1764,18 @@ def _find_gaps_for_slug_contract(
                     f"({verification_note}) -- no Evidence record cites it"
                 ),
             ))
+
+    for pc in _sr.pending_contradicting_findings(project_root, s, repo_root=repo_root):
+        gaps.append(Gap(
+            kind="claim_contradicted_by_fresh_check", subject_id=pc.claim_id, scope=pc.check_id,
+            reason=(
+                f"{pc.claim_id} has a pending, unapplied source_reconciliation manifest item "
+                f"({pc.manifest_path}) proposing contradicting Evidence from check "
+                f"{pc.check_id!r} (contract {pc.contract_id!r}, run {pc.run_id!r}) that has not "
+                "yet been reviewed"
+            ),
+            label=pc.label,
+        ))
 
 
 # ---------------------------------------------------------------------------
