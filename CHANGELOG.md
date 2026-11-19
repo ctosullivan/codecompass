@@ -279,6 +279,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   confirmed to fail against the pre-fix code and pass against the fix.
   Stage 89C (Task B's pre-registered controlled comparison) is
   unstarted and unaltered; Phase 89 remains `in progress`.
+- **Phase 89 Stage 89B — final independent re-verification, one
+  blocking correctness defect fixed**: a fresh `release-phase-auditor`
+  pass re-verifying the committed implementation found
+  `source_reconciliation.pending_contradicting_findings` silently
+  dropped an entire pending contradiction — reporting zero gaps, with
+  no error and no alternate signal — whenever the manifest item's own
+  recorded `repo_root` was unreachable (a cleaned-up scratch checkout,
+  a different machine), falsely implying "no gaps found" for a
+  genuinely still-pending, unreviewed finding. Fixed: the function now
+  falls through to a contract-relative-only re-validation (the
+  pre-existing `evaluate_result_precedence(repo_root=None)` fallback —
+  contract hash, raw-output tamper, and scope checks still run; only
+  the tested-subject/test-input digest recomputation is skipped) and
+  still reports the gap, carrying a new `PendingContradiction.
+  live_reconfirmed: bool` field; `knowledge_api.py`'s own gap-reason
+  text now says "contract-relative only -- not live-reconfirmed..."
+  in that case, mirroring the existing `stale_test_citation` gap
+  kind's own wording convention, rather than either silently
+  disappearing or being misrepresented as fully live-reconfirmed. 3
+  new regression tests (1550 total). The same pass also found two
+  concerns raised by a subsequent source review were not real defects
+  (a Claim's stale authored prose next to its own current structured
+  `evidence_support_state` is a pre-existing, by-design limitation,
+  not newly introduced, and is already visible via `knowledge_api.
+  get()`'s own `details.fields`) and closed a genuinely missing
+  end-to-end negative-control demonstration (an unrelated Ledgerkit
+  source change produces zero reconciliation and zero documentation
+  invalidation, now explicitly run and recorded). Separately, a real
+  candidate learning the stage's own retro had claimed was filed but
+  wasn't (`L-138` — the real AI documentation composer's own system
+  prompt does not reliably generalise its hedging/scope discipline to
+  a different Claim/evidence shape than it was tuned on) is now
+  genuinely filed, triaged `promote`, and landed in `planning/
+  ROADMAP.md`'s "Future-improvement backlog." A final re-audit
+  confirmed both fixes and re-ran the full suite/both validators/
+  `ruff` with identical, unregressed results — verdict **PASS**,
+  appended to `planning/retros/_audit-phase-89-stage-89b.md`.
+- **Phase 89 Stage 89C — implementation-ready plan drafted (planning
+  only, not implemented)**: `planning/phase-89-stage-89c-task-b-
+  controlled-comparison.md` specifies, against the binding Task B
+  pre-registration (`planning/retros/
+  phase-89-ledgerkit-two-task-demonstration.md`, unchanged, cross-
+  referenced not re-litigated), the exact control/treatment isolation
+  procedure (reusing the already-proven Phase 78 Ledgerkit-trial
+  seed-then-fork/fixture-equivalence/boundary-check pattern), a pinned
+  `ReportSpec.with_combined_section` implementation contract and its
+  independently-authored acceptance test (reusing Phase 82's oracle
+  infrastructure), deterministic pre-/post-reconciliation context-
+  packet generation with a mechanical contamination check, blinded
+  `context-evaluator` evaluation methodology, and all three separate
+  exit gates (technical completion; a valid evaluation; the roadmap's
+  own positive/negative result) kept explicit and never conflated.
+  Corrects a real factual error found during drafting itself: the
+  packet's own `consistency.status` field does **not** distinguish
+  the pre-/post-Task-A knowledge state for the real `CL-BFS-004` (it
+  stays `"unconfirmed"` either way, since that Claim only ever covers
+  one of its contract's three required scopes) — the genuine,
+  mechanically-diffable signal is `consistency.evidence_currency`/
+  `reasons`, confirmed by direct reproduction across all four
+  pre/post × with/without-`repo_root` combinations. Stage 89C itself
+  remains unimplemented and unauthorised by this work.
 - **Phase 89 — third planning amendment (Task A mechanism, Evidence
   identity, exit-gate semantics, baseline freshness) — still planning
   only**: a fresh, independent-orchestrator re-verification found the

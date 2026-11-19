@@ -13267,3 +13267,184 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
   `L-137 | 2026-11-19 | scoped-rule | .claude/agents/release-phase-auditor.md
   "What to check" item 16 (an audit checklist's scope does not generalise
   across defect classes; extends L-132) @ <landing commit>`.
+
+### L-138 — the Phase 87 documentation composer's own tuned system prompt does not reliably hedge a `partially_supported` Claim's test-coverage status, or stay within an oracle record's own stated scope, on the first (or even second) attempt against a *different* Claim/evidence shape than the one it was tuned on
+
+- **origin:** Phase 89 Stage 89B, the real Ledgerkit documentation-cascade
+  demonstration (`planning/retros/phase-89-stage-89b-ledgerkit-
+  demonstration.md`, "Review iteration" section)
+- **date:** 2026-11-20
+- **project_revision:** `88b6e30` (Stage 89B landed)
+- **observation:** every section compiled by the real AI composer
+  (`scripts/compile_doc_section.py::build_system_prompt`, Phase 87's
+  own already-tuned system prompt, invoked via the real
+  `cleanroom_broker.run_inference`, never mocked) during this
+  demonstration needed real, independently-dispatched review iteration
+  before passing both the semantic-support and editorial-quality
+  gates:
+  - `overlapping-patterns` (`CL-BFS-004`, `partially_supported` at the
+    time) took **4 rounds**: round 1 overclaimed the behaviour as a
+    tested guarantee with no hedge at all (semantic UNSUPPORTED) and
+    used defensive, repetitive phrasing (editorial FAIL); round 2's
+    hedge sentence was semantically correct but read as meta-commentary/
+    disclaimer (editorial FAIL); round 3's hedge still read as
+    self-referential epistemic-provenance framing (editorial FAIL);
+    only round 4, rephrasing the same fact as direct reader-facing
+    advice ("this path has no dedicated test yet, so verify
+    independently if your workflow depends on..."), passed both
+    dimensions.
+  - `multi-section-sign-inversion` (`CL-BFS-002`, `supported`) took
+    **3 rounds**: round 1 added plausible-sounding, unevidenced
+    mechanism detail beyond what the cited oracle-run record actually
+    stated ("inverted via sign flipping", "merged into a single
+    consistent total" — semantic UNSUPPORTED); round 2 removed the
+    mechanism detail but added a test-provenance sentence that read as
+    meta-commentary (editorial FAIL); only round 3, with the
+    provenance sentence cut entirely down to one plain behavioural
+    sentence, passed both dimensions.
+  Both gaps are real and reproducible against the *existing*, already-
+  tuned Phase 87 prompt (not a synthetic fixture built to pass on the
+  first try): a prompt tuned against one Claim's own historical failure
+  modes (Phase 87C's three-round tightening, already baked into
+  `build_system_prompt`) does not automatically generalize to a
+  different Claim with a different evidence shape (here: a
+  partially-confirmed, source-only Claim and a sign-inversion
+  regression, rather than Phase 87C's fully-supported one) — the same
+  "a fix scoped to one shape doesn't generalize to a different shape"
+  pattern this project already named for audit checklists (`L-137`,
+  within the same phase), now also true of the documentation composer's
+  own system prompt, one layer up the pipeline. Fixing the shared
+  composer prompt itself was explicitly out of Stage 89B's own scope
+  (not a named deliverable, and would be an uncontrolled change to
+  Phase 87's own already-reviewed mechanism).
+- **evidence:** `planning/retros/phase-89-stage-89b-ledgerkit-
+  demonstration.md`, "Review iteration" section (the full round-by-round
+  account quoted above, including each round's semantic/editorial
+  verdict and the specific lead draft-patch applied between rounds) and
+  its own explicit framing ("This iteration is itself a real, disclosed
+  Stage 89B finding, not incidental noise... Both are genuine,
+  reproducible gaps in the *existing* Phase 87 composer prompt
+  (`scripts/compile_doc_section.py::build_system_prompt`)... recorded
+  here, and as a candidate learning..."); corroborated by
+  `planning/retros/phase-89-stage-89b.md`'s own "Lessons learnt" section
+  (identical framing: "A documentation-composer system prompt tuned
+  against one Claim's own historical failure modes... does not
+  automatically generalize to a *different* Claim with a *different*
+  evidence shape").
+- **classification:** future-improvement — a known, disclosed limitation
+  of an existing, already-shipped mechanism (Phase 87's composer system
+  prompt), not yet acted on; fixing it is an uncontrolled change to a
+  reviewed mechanism outside any currently-funded phase's scope.
+- **status:** promoted
+- **recurrence:** first occurrence of this specific finding (composer-
+  prompt hedging/mechanism-overclaim gap against a `partially_supported`
+  Claim and against an oracle record's own stated scope). Checked for
+  overlap before filing:
+  - `L-137` (Phase 89 Stage 89A, `status: promoted`) names the same
+    general meta-pattern ("a fix/review scoped to one shape doesn't
+    generalize to a different shape") but for a *different* artifact
+    (an audit's own checklist) — this entry is a new, distinct instance
+    of that pattern, one layer up the documentation pipeline, not a
+    duplicate; not merged, per the retro's own explicit cross-reference
+    treating them as two separate instances of the same shape.
+  - `L-119` (Phase 87 Stage 87A, `status: retained`, pending `CLAUDE.md`
+    §1 approval) also concerns `build_system_prompt`, but names a
+    *process* rule for revising a writing contract (name the exact
+    recurring phrasing, not its abstract category) — already fixed and
+    verified for the one Claim (`CL-CTXT-005`) it was tuned against.
+    This entry reports a *new* instance of imperfect generalization
+    found later, against *different* Claims, after that process rule
+    was already in place and followed — not evidence against `L-119`
+    (which remains correct as a process rule), but evidence that
+    following it does not make the resulting prompt generalize to every
+    future shape either. Distinct finding, not merged.
+  - `L-120` (Phase 87 Stage 87A hardening pass, `status: retained`,
+    pending `CLAUDE.md` §1 approval) concerns a verified-bytes-vs-memory
+    integrity gap in `compose_section`, unrelated to prompt content.
+    Not overlapping.
+  - Grepped `inbox.md` for "hedge", "partially_supported", "mechanism
+    detail" — no other entry about the composer prompt's own
+    hedging/overclaim behavior specifically.
+- **promoted_to:** `planning/ROADMAP.md` "Future-improvement backlog
+  (unscheduled)" table (landed by the lead, 2026-11-20; `promoted.md`
+  line added with the exact commit once committed)
+- **curation note (2026-11-20, knowledge-curator, Phase 89 Stage 89B
+  triage):** filed directly by this triage, to make true the claim
+  `planning/retros/phase-89-stage-89b.md`'s own "Candidate learnings
+  filed" section already makes ("One new candidate learning naming the
+  composer-prompt-generalization finding above... see
+  `planning/learnings/inbox.md` for its exact id") — a fresh independent
+  `release-phase-auditor` re-audit (`planning/retros/
+  _audit-phase-89-stage-89b.md`, "Additional finding" / DoD item 5
+  section, lines ~623-644) confirmed this claim was false as of its own
+  pass: no `L-`-prefixed entry mentioning "Stage 89B" or "composer"
+  existed anywhere in `inbox.md` or `promoted.md`, and
+  `planning/learnings/candidates/` was empty. All required fields
+  present (origin, date, project_revision, observation, evidence,
+  classification, status) — accepted as filed.
+
+  **Recommendation: promote**, as a `future-improvement`, to
+  `planning/ROADMAP.md`'s "Future-improvement backlog (unscheduled)"
+  table — matching the convention `L-122`/`L-124`/`L-131` already use
+  for exactly this kind of "a known, disclosed gap in an existing
+  mechanism, noted but not yet acted on" finding. This is a finding
+  about the *existing*, already-shipped Phase 87 composer prompt's own
+  residual limitation, not a new process rule for an agent's own
+  checklist or a `CLAUDE.md` amendment — so it does not belong in
+  `.claude/agents/*` (unlike `L-137`) or in `proposed-governance-
+  changes.md` (unlike `L-119`). `planning/ROADMAP.md` is outside this
+  role's own write boundary (per the learning-lifecycle, a
+  `future-improvement`-classified finding's roadmap row is finalised by
+  `roadmap-context-curator`, not this role) — draft row text for that
+  curator to land:
+
+  > `| L-138 | The real Phase 87 documentation composer
+  > (\`scripts/compile_doc_section.py::build_system_prompt\`) does not
+  > reliably hedge a \`partially_supported\` Claim's own test-coverage
+  > status in a register independent reviewers accept as reader-facing
+  > advice rather than meta-commentary on the first or even second
+  > attempt, and separately tends to add plausible-sounding mechanism
+  > detail beyond what an oracle-run record's own stated scope actually
+  > supports — found during Phase 89 Stage 89B's real Ledgerkit
+  > documentation-cascade demonstration, where two sections
+  > (\`overlapping-patterns\`/\`CL-BFS-004\`, \`multi-section-sign-
+  > inversion\`/\`CL-BFS-002\`) needed 4 and 3 real independent review
+  > rounds respectively to converge, against the prompt as it already
+  > stands post-Phase-87C tuning. Origin: \`L-138\` (Phase 89 Stage 89B,
+  > \`planning/retros/phase-89-stage-89b-ledgerkit-demonstration.md\`,
+  > "Review iteration"). | FUTURE-IMPROVEMENT | not started | Revisit
+  > alongside any future \`compile_doc_section.py\`/\`build_system_
+  > prompt\` change, or if a future phase/stage runs \`docs compile\`
+  > against a \`partially_supported\` Claim or a contradicting-evidence
+  > scenario at meaningfully higher volume, where repeated 3-4-round
+  > review cycles become a real cost rather than a one-off demonstration
+  > cost. |`
+
+  Not held for a second occurrence before recommending promotion: the
+  finding is already corroborated by two independent real review rounds
+  across two distinct sections/Claims within this one demonstration
+  (4 rounds for one, 3 for the other), each converging on the same two
+  underlying defects (hedging register, mechanism-detail overclaim) —
+  matching the single-occurrence-with-strong-internal-evidence precedent
+  `L-122`/`L-124`/`L-131` already set for this same backlog table,
+  rather than requiring a second, separate demonstration before filing.
+
+  Once `roadmap-context-curator` lands the row above in
+  `planning/ROADMAP.md`, flip `status` to `promoted`, record the landing
+  commit in `promoted_to`, and add this `promoted.md` line: `L-138 |
+  2026-11-20 | future-improvement | planning/ROADMAP.md "Future-
+  improvement backlog" table (Phase 87 composer prompt does not reliably
+  hedge a partially_supported Claim's test-coverage register or stay
+  within an oracle record's own stated scope on first/second attempt)
+  @ <landing commit>`.
+
+  **Lead: this filing also makes true the claim
+  `planning/retros/phase-89-stage-89b.md`'s "Candidate learnings filed"
+  section already makes — no further edit to that retro section is
+  needed, since it already (correctly) deferred to this file for "its
+  exact id." The `_audit-phase-89-stage-89b.md` re-audit that flagged
+  the prior absence (lines ~623-644, ~722-727) should be considered
+  closed for this specific finding once this entry's presence here is
+  confirmed; no script runs required to verify this (a direct `grep -n
+  "L-138" planning/learnings/inbox.md` by the lead is sufficient, and
+  this role has no `Bash` to run it itself).**

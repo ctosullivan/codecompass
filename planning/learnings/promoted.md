@@ -114,4 +114,5 @@ L-122 | 2026-11-07 | future-improvement | planning/ROADMAP.md "Future-improvemen
 L-123 | 2026-11-09 | open-work | planning/CONTEXT.md (next step: reconcile EV-CTXT-021 into CL-CTXT-005) @ 195dcc5
 L-124 | 2026-11-09 | future-improvement | planning/ROADMAP.md (backlog: docs publish residual write-boundary race, revisit if Stage 87C introduces genuine multi-writer concurrency) @ 195dcc5
 L-137 | 2026-11-19 | scoped-rule | .claude/agents/release-phase-auditor.md "What to check" item 16 (a clean checklist result is not evidence against a defect class the checklist was never scoped to probe for; extends L-132) @ (this stage's own closeout commit)
+L-138 | 2026-11-20 | future-improvement | planning/ROADMAP.md "Future-improvement backlog" table (Phase 87 documentation composer's own system prompt does not reliably generalise its hedging/scope discipline to a different Claim/evidence shape than it was tuned on) @ (this stage's own closeout commit)
 
