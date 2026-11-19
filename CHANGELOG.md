@@ -207,9 +207,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and confirmed governance scope (no edits to `decisions/0096`/`0097`,
   no Stage 89B/89C creep, both real checkouts untouched) — verdict
   **PASS**, appended to `planning/retros/_audit-phase-89-stage-89a.md`.
-  The implementation is staged but not yet committed (a direct commit
-  attempt was denied by this session's own auto-mode permission
-  classifier; manual action required — see `planning/CONTEXT.md`).
+  Committed at `61591f4`. A third independent `release-phase-auditor`
+  pass against that exact committed commit confirmed every mechanism
+  in areas A-E sound, but returned **FAIL** on process-completeness
+  grounds: `planning/retros/phase-89-stage-89a.md`'s own phase retro
+  had not been updated for the second corrective pass and was missing
+  several `TEMPLATE.md`-required sections; `L-135`/`L-136` sat
+  untriaged in `planning/learnings/inbox.md`; and this file, `planning/
+  ROADMAP.md`, and `planning/CONTEXT.md` still described the
+  implementation as staged-but-uncommitted after the commit had
+  already landed. Corrected in place (retro completion in `planning/
+  retros/phase-89-stage-89a.md`; `L-135` triaged promote, `L-136`
+  merged into `L-081`, and a new `L-137` filed and promoted into
+  `.claude/agents/release-phase-auditor.md`'s own "What to check" list;
+  this file/`planning/ROADMAP.md`/`planning/CONTEXT.md`'s stale
+  language fixed), ahead of a fresh re-audit; see `planning/retros/
+  _audit-phase-89-stage-89a.md`'s own later sections for the full
+  history.
+- **Phase 89 Stage 89B — the new knowledge-gap classification and the
+  documentation-reconciliation cascade demonstration**: `knowledge_api.
+  Gap` gains one new, additive field, `label` (`None` for every
+  pre-existing gap kind), and `find_gaps` gains one new kind,
+  `"claim_contradicted_by_fresh_check"` — a Claim with a still-
+  genuinely-pending, unapplied `source_reconciliation` manifest item
+  proposing contradicting Evidence against it, labelled `"regression"`
+  (a historical `PASS` existed before the fresh `FAIL`) or `"newly_
+  discovered_failure"` (it did not). Implemented via a new, read-only
+  `source_reconciliation.pending_contradicting_findings` (scans every
+  manifest for a slug, independently re-validates each cited
+  `OracleResult` against the live contract/checkout rather than
+  trusting cached fields, re-checks the target Claim's own current
+  `claim_scope_category` so an aggregate/superseded Claim already
+  excluded from automatic mutation is never double-reported here,
+  cross-checks the live Claim's own `contradicting_evidence` so an
+  already-resolved finding from a duplicate/colliding manifest is never
+  reported a second time, and deduplicates by `(claim_id, check_id,
+  run_id)`) — never mutates anything, including the manifest it scans.
+  11 new tests (`tests/test_knowledge_api.py::
+  TestClaimContradictedByFreshCheckGap`). Demonstrated end to end
+  against real Ledgerkit data, in disposable scratch copies: the new
+  gap kind surfaced a genuine regression (`CL-BFS-002`, correctly
+  labelled `"regression"`) before review and disappeared once reviewed
+  and applied; the full `codecompass docs maintain`/`compile`/
+  `record-review`/`publish` cascade (the real AI composer, real
+  independent `general-purpose`-dispatch semantic/editorial reviews,
+  several genuine FAIL rounds honestly iterated rather than smoothed
+  over) correctly regenerated only the documentation region citing the
+  Claim whose Evidence actually changed, for both the newly-covered
+  detector (`CL-BFS-004`) and the regression detector (`CL-BFS-002`),
+  while leaving every unrelated region `noop`; the pre-existing,
+  unmodified Phase 87 `contradiction`-gap and `concurrent_conflict`
+  mechanisms were independently confirmed, live, to block auto-
+  regenerating prose for a genuinely contested Claim and to protect a
+  human's own concurrent edit, respectively — no new documentation
+  machinery was built to produce either guarantee
+  (`planning/retros/phase-89-stage-89b-ledgerkit-demonstration.md`,
+  `planning/retros/phase-89-stage-89b.md`). The real `~/projects/
+  ledgerkit` checkout and the real codecompass knowledge base were
+  never modified. Full suite/both validators/`ruff` results: see the
+  Phase 89 completion report. A first independent `release-phase-
+  auditor` pass found one real defect — `knowledge_gaps`'s own
+  plain-text (non-`--json`) CLI output silently swallowed the new
+  label (an unescaped `" [regression]"` suffix is itself valid `rich`
+  markup syntax for an unknown/empty tag, which `console.print` drops
+  rather than renders) — fixed (`rich.markup.escape` applied to the
+  whole bracketed suffix, not just its inner text; a first fix attempt
+  that escaped only the inner text was independently found still
+  insufficient) with a new, dedicated CLI-boundary regression test
+  (`tests/test_cli.py::
+  test_knowledge_gaps_plain_text_output_shows_the_label_not_swallowed_by_rich_markup`)
+  confirmed to fail against the pre-fix code and pass against the fix.
+  Stage 89C (Task B's pre-registered controlled comparison) is
+  unstarted and unaltered; Phase 89 remains `in progress`.
 - **Phase 89 — third planning amendment (Task A mechanism, Evidence
   identity, exit-gate semantics, baseline freshness) — still planning
   only**: a fresh, independent-orchestrator re-verification found the

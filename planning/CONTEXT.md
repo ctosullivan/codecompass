@@ -106,13 +106,44 @@ manifest's one-second-precision filename could let a same-second
 own review decision — re-demonstrated live against real Ledgerkit
 records and independently re-audited, verdict **PASS**
 (`planning/retros/_audit-phase-89-stage-89a.md`). The implementation
-(src/tests/`decisions/0098`) is staged (`git add`) but **not yet
-committed** — a direct commit attempt was denied by this session's own
-auto-mode permission classifier (not a defect in the work; see "Next
-concrete step" below for the exact manual commands needed). Per
-`CLAUDE.md` §5, the PASS verdict is voided by any further edit to
-those staged files before that commit lands. Stages 89B/89C are not
-started.** Independently deliverable per
+(src/tests/`decisions/0098`) is **committed at `61591f4`** (the earlier
+permission-classifier block on this specific commit has since cleared).
+A **third** independent `release-phase-auditor` pass, against that
+exact committed commit, confirmed every mechanism in its own areas A-E
+sound but returned **FAIL on process-completeness grounds**: the phase
+retro (`planning/retros/phase-89-stage-89a.md`) had never been updated
+for the second corrective pass and was missing several
+`TEMPLATE.md`-required sections; `L-135`/`L-136` sat untriaged in
+`planning/learnings/inbox.md`; and this file, `CHANGELOG.md`, and
+`planning/ROADMAP.md` still described the implementation as
+staged-but-uncommitted after the commit had already landed. **All
+three corrected**: `L-135` triaged `promote` (pending explicit user
+`CLAUDE.md` §0 approval for its `CLAUDE.md` §1 destination — see
+`planning/v1-redefinition/proposed-governance-changes.md` §R — not
+landed without that approval), `L-136` merged into `L-081`, and a new
+`L-137` filed and promoted into `.claude/agents/release-phase-
+auditor.md`'s own "What to check" list; the three files' stale
+language fixed. A **fourth** independent audit pass then found the
+retro fix itself incomplete — `planning/retros/phase-89-stage-89a.md`
+still lacked several of `TEMPLATE.md`'s own required sections (`Where
+we are`, `What worked`/`What didn't work`, `Candidate learnings filed`,
+`Where we're going`, `Time / cost note`) — fixed, and a **fifth**
+independent pass confirmed it complete, verdict **PASS**. **Stage 89B
+(the new `claim_contradicted_by_fresh_check` `find_gaps` gap kind plus
+the real Ledgerkit documentation-cascade demonstration) is implemented,
+demonstrated, and independently audited** (`planning/retros/
+phase-89-stage-89b.md`, `planning/retros/
+phase-89-stage-89b-ledgerkit-demonstration.md`, `planning/retros/
+_audit-phase-89-stage-89b.md`) — its own first audit found one real
+defect (`knowledge_gaps`'s plain-text CLI output silently swallowing
+the new label via unescaped `rich` markup syntax), fixed with a
+dedicated CLI-boundary regression test, re-audited, verdict **PASS**.
+This work was begun, per this dispatch's own explicit "proceed
+directly to Stage 89B" instruction on a PASS/PASS-WITH-OBSERVATIONS
+Stage 89A verdict, before the third Stage 89A audit's own FAIL was
+known — a disclosed sequencing artifact, not a concealment, covered in
+the final completion report. Stage 89C is not started.** Independently
+deliverable per
 `decisions/0085` §3 (its
 prerequisites are Phase 84 and Phase 87 only, not Phase 88). The plan
 went through six rounds of independent review before reaching READY
@@ -1470,27 +1501,22 @@ Trials), 91 (External Validation and Adoption), and 92 (v2.0 Hardening
 and Release) remain further out in the same `not started` sequence.
 
 **Superseded again by the "Current phase" section above**: Stage 89A's
-second corrective pass (`decisions/0098`) is implemented, tested,
-re-demonstrated against real Ledgerkit records, and independently
-re-audited **PASS**. **Next concrete step: land the commit(s).** All
-nine touched/added files (`src/codecompass/source_reconciliation.py`,
-`src/codecompass/knowledge_intermediate.py`, `src/codecompass/cli.py`,
-`tests/test_source_reconciliation.py`,
-`decisions/0098-phase-89-stage-89a-second-corrective-pass-claim-scope-
-eligibility-and-manifest-collision-safety.md`, `CHANGELOG.md`,
-`planning/CONTEXT.md`, `planning/ROADMAP.md`,
-`planning/retros/_audit-phase-89-stage-89a.md`,
-`planning/retros/phase-89-stage-89a-second-corrective-ledgerkit-
-demonstration.md`) are staged (`git add`) but uncommitted — direct
-`git commit` attempts in this session are denied by the auto-mode
-permission classifier; per its own instructions this was not retried.
-A human running `git commit` directly (or adding a Bash permission
-rule, as the classifier's own denial message suggests) is the only
-remaining step before this corrective pass is fully closed out in
-history. **Do not edit any of the first five (audited) files before
-that commit lands** — doing so voids the PASS verdict above and
-requires a fresh audit. Stage 89B remains unauthorised and unstarted
-either way.
+process-completeness fixes are independently re-audited **PASS** (fifth
+audit pass, after a fourth found the retro's own `TEMPLATE.md` sections
+still incomplete). Stage 89B is implemented, demonstrated, and
+independently audited **PASS** (one real defect — a plain-text CLI
+label-escaping bug — found, fixed, and re-confirmed). **Next concrete
+step: commit everything this dispatch touched.** Do not edit `src/
+codecompass/source_reconciliation.py`, `knowledge_intermediate.py`,
+`cli.py`, `knowledge_api.py`, or their test files before that commit
+lands — doing so voids both PASS verdicts above and requires a fresh
+audit. If the commit is denied by the auto-mode permission classifier
+(as happened twice earlier in Phase 89's own history), do not retry —
+report the exact manual command needed. L-135's own `CLAUDE.md` §1
+promotion (`planning/v1-redefinition/proposed-governance-changes.md`
+§R) needs the user's own explicit `CLAUDE.md` §0 approval before it can
+land; not done automatically by any agent or by the lead without that
+approval.
 
 A smaller, nearer-term item that does *not* need that authorisation:
 Stage 87C's own five candidate learnings (`L-125`-`L-129`,
