@@ -181,7 +181,16 @@ def _claims_bridged_by_check_id(
     direction `classify_symbol` resolves from a Claim, inverted to
     start from a `check_id` instead, for the test-input-change and
     newly-coverable-check pathways, which have no symbol to resolve
-    from in the first place."""
+    from in the first place.
+
+    This identifies every Claim *affected* by a change to `check_id`'s
+    own verification -- it deliberately does not yet distinguish a
+    Claim whose own assertion is specifically governed by this one
+    check from a broader Claim that merely cites the same bridging
+    Evidence alongside others (Phase 89A corrective pass, defect A).
+    Callers must run `claim_scope_category`/`_claim_bridging_check_ids`
+    against each returned Claim before deciding whether it is eligible
+    for this module's automatic single-check Evidence-update path."""
     bridging_evidence = {ev for ev, cid in evidence_check_ids.items() if cid == check_id}
     if not bridging_evidence:
         return []
@@ -194,6 +203,18 @@ def _claims_bridged_by_check_id(
         if (supporting | contradicting) & bridging_evidence:
             claim_ids.append(rec.record_id)
     return sorted(claim_ids)
+
+
+def _claim_bridging_check_ids(claim_rec, evidence_check_ids: dict[str, str]) -> set[str]:
+    """The set of distinct `check_id`s `claim_rec`'s own existing
+    `supporting_evidence`/`contradicting_evidence` already bridges to,
+    via existing test-kind Evidence (`evidence_check_ids`, `_test_
+    evidence_check_id_map`'s own return value) -- the per-Claim input
+    `claim_scope_category`'s own `bridging_check_ids` ambiguity check
+    needs (Phase 89A corrective pass, defect A)."""
+    cited = set(_extract_id_strings(claim_rec.fields.get("supporting_evidence", "")))
+    cited |= set(_extract_id_strings(claim_rec.fields.get("contradicting_evidence", "")))
+    return {evidence_check_ids[ev] for ev in cited if ev in evidence_check_ids}
 
 
 def _had_historical_pass(historical_results: list, check_id: str) -> bool:
@@ -582,6 +603,27 @@ class ContributingFinding:
 
 
 @dataclass
+class AffectedClaim:
+    """A Claim whose own existing Evidence bridges to a check that just
+    drifted, but which is *not* eligible for this module's automatic
+    single-check Evidence-update path (Phase 89A corrective pass,
+    defect A) -- reported here so it is never silently discarded, but
+    never turned into a `ContributingFinding`/manifest item: a broader
+    Claim may only ever be updated through a separately justified,
+    correctly scoped assessment of its own complete dependencies, not
+    through this automatic mechanism."""
+    claim_id: str
+    check_id: str
+    contract_id: str
+    run_id: str
+    category: str  # "aggregate" | "ambiguous"
+    reason: str
+    outcome: str  # the fresh result's own effective outcome ("PASS" | "FAIL")
+    resolution: str  # "symbol_change" | "test_input_change" | "" (detector (b))
+    source_path: str | None = None
+
+
+@dataclass
 class ReconciliationProposal:
     """`propose_reconciliation`'s own return type (Phase 89A corrective
     pass, defect A) — carries both the contributing findings and, for
@@ -591,9 +633,16 @@ class ReconciliationProposal:
     (`required_by_path`, derived from every `test_input_change` finding
     `detect_source_changes` reported) was successfully, validly
     re-verified this run (`accounted_by_path`) -- never merely because
-    *one* of several affected checks happened to be reconciled."""
+    *one* of several affected checks happened to be reconciled.
+
+    `affected_claims` (Phase 89A corrective pass, defect A) carries
+    every Claim a changed check's own bridging Evidence reaches but
+    which `claim_scope_category` found ineligible for automatic
+    mutation (`"aggregate"`/`"ambiguous"`) -- preserved as a visible
+    finding, never silently dropped, and never fed into `findings`."""
     findings: list[ContributingFinding] = field(default_factory=list)
     baseline_eligible_test_input_paths: frozenset[str] = frozenset()
+    affected_claims: list[AffectedClaim] = field(default_factory=list)
 
 
 def _durable_raw_output_dir(slug: str) -> Path:
@@ -679,7 +728,34 @@ def propose_reconciliation(
             except _oracle.OracleSchemaError:
                 continue
 
+    # Phase 89A corrective pass, defect A: the same bridge map used to
+    # decide "does this Claim's own existing Evidence already reach a
+    # single, unambiguous check" for every pathway below -- computed
+    # once, here, never re-derived differently per pathway.
+    evidence_check_ids = _test_evidence_check_id_map(records, contract, project_root)
+
     out: list[ContributingFinding] = []
+    affected: list[AffectedClaim] = []
+
+    def _gate_claim_scope(claim_id: str, *, bridging: bool) -> tuple[object, str, str]:
+        """Resolves `claim_id`'s own record and scope category. Returns
+        `(claim_rec_or_None, category, reason)` -- `category` is
+        `"missing"` if the Claim no longer exists, `"superseded"`,
+        `"aggregate"`, `"ambiguous"`, or `"eligible"`. `bridging=False`
+        skips the ambiguous check (detector (b), which resolves a
+        single check to a single Claim via a different, already
+        fail-closed mechanism -- `detect_newly_coverable_checks`'s own
+        `depends_on`-length guard)."""
+        claim_rec = records.get(claim_id)
+        if claim_rec is None:
+            return None, "missing", f"{claim_id} no longer exists"
+        bridging_check_ids = (
+            _claim_bridging_check_ids(claim_rec, evidence_check_ids) if bridging else None
+        )
+        category, reason = _ki.claim_scope_category(
+            claim_rec, bridging_check_ids=bridging_check_ids,
+        )
+        return claim_rec, category, reason
 
     # --- (a) symbol_change findings: through assess(), reusing the
     # existing classify_symbol pathway, never through a second,
@@ -729,12 +805,26 @@ def propose_reconciliation(
                         if claim_finding.get("check_id") != check_id:
                             continue
                         claim_id = claim_finding["claim_id"]
+                        claim_rec, category, scope_reason = _gate_claim_scope(
+                            claim_id, bridging=True,
+                        )
+                        if category == "missing":
+                            continue
+                        if category == "superseded":
+                            continue
+                        if category != "eligible":
+                            affected.append(AffectedClaim(
+                                claim_id=claim_id, check_id=check_id,
+                                contract_id=fresh_result.contract_id, run_id=fresh_result.run_id,
+                                category=category, reason=scope_reason,
+                                outcome=fresh_outcome, resolution="symbol_change",
+                                source_path=range_report["path"],
+                            ))
+                            continue
                         if (
                             classification == "VERIFIED_SCOPE"
                             and label == "re_confirmed"
-                            and records.get(claim_id)
-                            and records[claim_id].fields.get("evidence_support_state")
-                            == "supported"
+                            and claim_rec.fields.get("evidence_support_state") == "supported"
                         ):
                             # §4.3: a fresh VERIFIED_SCOPE against an
                             # ALREADY-supported Claim is a no-op -- but
@@ -803,10 +893,23 @@ def propose_reconciliation(
             "contradicting_evidence" if fresh_result.outcome == "FAIL" else "supporting_evidence"
         )
         for claim_id in f.claim_ids:
+            claim_rec, category, scope_reason = _gate_claim_scope(claim_id, bridging=True)
+            if category == "missing":
+                continue
+            if category == "superseded":
+                continue
+            if category != "eligible":
+                affected.append(AffectedClaim(
+                    claim_id=claim_id, check_id=f.check_id,
+                    contract_id=fresh_result.contract_id, run_id=fresh_result.run_id,
+                    category=category, reason=scope_reason,
+                    outcome=fresh_result.outcome, resolution="test_input_change",
+                    source_path=f.path,
+                ))
+                continue
             if (
                 label == "re_confirmed"
-                and records.get(claim_id)
-                and records[claim_id].fields.get("evidence_support_state") == "supported"
+                and claim_rec.fields.get("evidence_support_state") == "supported"
             ):
                 continue  # §4.3: already-supported Claim, genuinely a no-op
             out.append(ContributingFinding(
@@ -841,6 +944,19 @@ def propose_reconciliation(
         _, ok, _reason = _persist_and_verify(project_root, slug, fresh_result)
         if not ok or fresh_result.outcome == "INVALID":
             continue
+        claim_rec, category, scope_reason = _gate_claim_scope(nc.claim_id, bridging=False)
+        if category == "missing":
+            continue
+        if category == "superseded":
+            continue
+        if category != "eligible":
+            affected.append(AffectedClaim(
+                claim_id=nc.claim_id, check_id=nc.check_id,
+                contract_id=fresh_result.contract_id, run_id=fresh_result.run_id,
+                category=category, reason=scope_reason,
+                outcome=fresh_result.outcome, resolution="",
+            ))
+            continue
         label = _label_for(historical_results, nc.check_id, fresh_result.outcome)
         target_field = (
             "contradicting_evidence" if fresh_result.outcome == "FAIL" else "supporting_evidence"
@@ -859,6 +975,7 @@ def propose_reconciliation(
 
     return ReconciliationProposal(
         findings=out, baseline_eligible_test_input_paths=baseline_eligible_test_input_paths,
+        affected_claims=affected,
     )
 
 
@@ -872,6 +989,7 @@ def write_source_reconciliation_manifest(
     project_root: Path, slug: str, findings: list[ContributingFinding],
     *, repo_root: Path | None = None, target_graph_db: Path | None = None,
     baseline_eligible_test_input_paths: frozenset[str] | None = None,
+    affected_claims: list[AffectedClaim] | None = None,
 ) -> Path | None:
     """One manifest item **per Claim** (never per-finding, §4.8) —
     every contributing finding against the same Claim in one run is
@@ -896,8 +1014,23 @@ def write_source_reconciliation_manifest(
     item's `contributing_source_paths` this round unless *every* check
     that shares it was successfully, validly re-verified -- a
     `symbol_change`/detector-(b) path is never gated (unaffected by
-    this parameter)."""
-    if not findings:
+    this parameter).
+
+    `affected_claims` (Phase 89A corrective pass, defect A) is written
+    as a separate, purely informational `[[affected_claims]]` array --
+    never an `items` entry, so `apply_manifest`'s own dispatch (which
+    only ever reads `data["items"]`) can never act on one: a broader
+    Claim excluded from automatic mutation is reported here, visibly,
+    rather than silently discarded, but can only ever be updated
+    through a separately justified, human-reviewed mechanism.
+
+    Manifest creation is collision-resistant (Phase 89A corrective
+    pass, defect B): two calls landing within the same one-second-
+    precision timestamp never race the same filename -- see
+    `knowledge_intermediate._write_manifest_exclusive`."""
+    findings = findings or []
+    affected_claims = affected_claims or []
+    if not findings and not affected_claims:
         return None
     eligible_paths = baseline_eligible_test_input_paths or frozenset()
     by_claim: dict[str, list[ContributingFinding]] = {}
@@ -907,9 +1040,7 @@ def write_source_reconciliation_manifest(
     sdir = _ki.slug_dir(project_root, slug)
     records = _ki.load_slug_records(sdir)
     ts = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-    manifest_path = _ki.reconciliation_dir(project_root, slug) / f"{ts}-source.toml"
     data: dict = {
-        "manifest_id": f"{slug}@{ts}-source",
         "created": datetime.now(UTC).isoformat(),
         "slug": slug,
         "items": [],
@@ -952,11 +1083,30 @@ def write_source_reconciliation_manifest(
             "state": "pending",
             "decision": "undecided",
         })
-    if not data["items"]:
+    data["affected_claims"] = [
+        {
+            "claim_id": a.claim_id,
+            "check_id": a.check_id,
+            "contract_id": a.contract_id,
+            "run_id": a.run_id,
+            "category": a.category,
+            "reason": a.reason,
+            "outcome": a.outcome,
+            "resolution": a.resolution,
+            "source_path": a.source_path or "",
+        }
+        for a in affected_claims
+    ]
+    if not data["items"] and not data["affected_claims"]:
         return None
-    manifest_path.parent.mkdir(parents=True, exist_ok=True)
-    manifest_path.write_text(_ki._serialize_manifest(data), encoding="utf-8")
-    return manifest_path
+
+    def _render(stem: str) -> str:
+        data["manifest_id"] = f"{slug}@{stem}"
+        return _ki._serialize_manifest(data)
+
+    return _ki._write_manifest_exclusive(
+        _ki.reconciliation_dir(project_root, slug), f"{ts}-source", _render,
+    )
 
 
 def advance_baselines_for_applied_item(

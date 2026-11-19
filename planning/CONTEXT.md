@@ -95,8 +95,25 @@ or requested by this exercise.
 
 **Current phase: Phase 89 — Incremental Knowledge and Documentation
 Reconciliation. Stage 89A — Detection and Manifest Extension — is
-implemented and independently demonstrated; Stages 89B/89C are not
-started.** Independently deliverable per `decisions/0085` §3 (its
+implemented, independently demonstrated, and (after a first corrective
+pass fixing three material defects, independently re-audited **PASS
+WITH NON-BLOCKING OBSERVATIONS**) now also through a **second**
+corrective pass (`decisions/0098`) fixing two further defects — a
+whole-contract/aggregate Claim (`CL-BFS-005`) could be silently
+promoted by a single re-verified check's result, and a reconciliation
+manifest's one-second-precision filename could let a same-second
+`verify-changes` run overwrite an earlier, still-pending manifest's
+own review decision — re-demonstrated live against real Ledgerkit
+records and independently re-audited, verdict **PASS**
+(`planning/retros/_audit-phase-89-stage-89a.md`). The implementation
+(src/tests/`decisions/0098`) is staged (`git add`) but **not yet
+committed** — a direct commit attempt was denied by this session's own
+auto-mode permission classifier (not a defect in the work; see "Next
+concrete step" below for the exact manual commands needed). Per
+`CLAUDE.md` §5, the PASS verdict is voided by any further edit to
+those staged files before that commit lands. Stages 89B/89C are not
+started.** Independently deliverable per
+`decisions/0085` §3 (its
 prerequisites are Phase 84 and Phase 87 only, not Phase 88). The plan
 went through six rounds of independent review before reaching READY
 (full history: `planning/retros/_review-phase89-plan.md`); the plan
@@ -206,11 +223,34 @@ fresh, disposable real `~/projects/ledgerkit` scratch copies via the
 real CLI (`planning/retros/phase-89-stage-89a-corrective-ledgerkit-
 demonstration.md`); the real checkout confirmed untouched throughout.
 `decisions/0097` documents the three resolutions plus the two bounded
-fixes. **A second, fresh independent `release-phase-auditor` pass of
-this corrective work is required and has not yet run** — Stage 89A
-remains closed on its original audit verdict above, and this
-corrective pass does not itself close anything until that second audit
-returns PASS or PASS WITH NON-BLOCKING OBSERVATIONS.
+fixes.
+
+**Second independent corrective audit** (`planning/retros/
+_audit-phase-89-stage-89a.md`, fresh `release-phase-auditor` dispatch,
+commits `98a2e1d`/`8f064dc`): live-reproduced all four dispatch-mandated
+checks against fresh disposable Ledgerkit scratch copies via the real
+CLI — the shared-test-input fix (editing only `tests/test_reports.py`
+correctly surfaced both `single-section-expense-subtotal` and
+`multi-section-income-expense-subtotal` as independent findings;
+rejecting one sibling's item while applying the other correctly left
+the shared file's baseline un-advanced until a follow-up cycle resolved
+it); two independent apply-time tamper vectors (raw-output byte flip;
+recorded `outcome` flip) both refused with zero Evidence/Claim
+mutation; the exact post-Claim-write/pre-`state="applied"` crash state,
+constructed by hand, recovered cleanly with no duplicate Evidence and a
+byte-identical Claim; a legitimate untampered item still applied
+successfully; a genuine concurrent Claim-`statement` edit still
+refused. Also independently re-derived the true `ruff` baseline via a
+disposable `git worktree` at `1bf83c2` (167 repo-wide, confirmed
+unchanged) and reran the full suite/both validators with identical
+results. Verdict: **PASS WITH NON-BLOCKING OBSERVATIONS** — same two
+items carried forward from the original audit (asymmetric-retry test
+coverage, now actually resolved by this corrective pass's own new
+test; the deferred `docs-reconstructor` drift audit, still deferred to
+Phase 89's terminal closeout). **The corrective pass is closed.** Stage
+89A stands done-and-corrected; Phase 89 overall remains `in progress`,
+not `done` — Stages 89B/89C are unstarted and unauthorised under either
+dispatch.
 
 Phase 87 — Documentation Schema and Knowledge-Compiled Documentation —
 remains `done`, kept below for continuity. All four stages were
@@ -1428,6 +1468,29 @@ one already mid-implementation, so continuing it is the natural
 default absent a reason to switch. Phase 90 (Comparative Development
 Trials), 91 (External Validation and Adoption), and 92 (v2.0 Hardening
 and Release) remain further out in the same `not started` sequence.
+
+**Superseded again by the "Current phase" section above**: Stage 89A's
+second corrective pass (`decisions/0098`) is implemented, tested,
+re-demonstrated against real Ledgerkit records, and independently
+re-audited **PASS**. **Next concrete step: land the commit(s).** All
+nine touched/added files (`src/codecompass/source_reconciliation.py`,
+`src/codecompass/knowledge_intermediate.py`, `src/codecompass/cli.py`,
+`tests/test_source_reconciliation.py`,
+`decisions/0098-phase-89-stage-89a-second-corrective-pass-claim-scope-
+eligibility-and-manifest-collision-safety.md`, `CHANGELOG.md`,
+`planning/CONTEXT.md`, `planning/ROADMAP.md`,
+`planning/retros/_audit-phase-89-stage-89a.md`,
+`planning/retros/phase-89-stage-89a-second-corrective-ledgerkit-
+demonstration.md`) are staged (`git add`) but uncommitted — direct
+`git commit` attempts in this session are denied by the auto-mode
+permission classifier; per its own instructions this was not retried.
+A human running `git commit` directly (or adding a Bash permission
+rule, as the classifier's own denial message suggests) is the only
+remaining step before this corrective pass is fully closed out in
+history. **Do not edit any of the first five (audited) files before
+that commit lands** — doing so voids the PASS verdict above and
+requires a fresh audit. Stage 89B remains unauthorised and unstarted
+either way.
 
 A smaller, nearer-term item that does *not* need that authorisation:
 Stage 87C's own five candidate learnings (`L-125`-`L-129`,

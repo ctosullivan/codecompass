@@ -125,6 +125,91 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   identically. Stage 89A remains closed; this corrective pass does not
   reopen or extend it into Stage 89B/89C, and Phase 89 itself is not
   marked `done`.
+- **Phase 89 Stage 89A corrective pass — second independent audit**: a
+  fresh `release-phase-auditor` dispatch (never the implementer)
+  live-reproduced all four dispatch-mandated checks against fresh
+  disposable Ledgerkit scratch copies via the real CLI — the
+  shared-test-input dual-attribution fix (editing only `tests/
+  test_reports.py` correctly surfaced both affected checks; rejecting
+  one sibling while applying the other correctly withheld the shared
+  file's baseline advance until the sibling was later resolved); two
+  independent apply-time tamper vectors (raw-output byte flip;
+  recorded `outcome` flip), both refused with zero Evidence/Claim
+  mutation; the exact post-Claim-write/pre-`state="applied"` crash
+  state, constructed by hand, recovering cleanly with no duplicate
+  Evidence; a legitimate untampered item still applying successfully;
+  a genuine concurrent Claim-`statement` edit still refused. Also
+  independently re-derived the true `ruff` baseline via a disposable
+  `git worktree` at `1bf83c2` (167, repo-wide, unchanged) and reran the
+  full suite and both strict validators with identical results.
+  Verdict: **PASS WITH NON-BLOCKING OBSERVATIONS**
+  (`planning/retros/_audit-phase-89-stage-89a.md`) — the same two items
+  carried forward from the original audit (the asymmetric-retry test
+  gap is now actually closed by this corrective pass's own new test;
+  the deferred `docs-reconstructor` drift audit remains deferred to
+  Phase 89's terminal closeout). The corrective pass is closed; Stage
+  89A stands done-and-corrected; Phase 89 remains `in progress`, not
+  `done`.
+- **Phase 89 Stage 89A — second corrective pass (`decisions/0098`)**: a
+  further source-level review found two more material defects neither
+  prior audit's own checklist had probed for. **Defect A**:
+  `_apply_source_reconciliation` checked only `(contract_id, check_id,
+  run_id)` identity and a cited result's own re-validated outcome — it
+  never distinguished a Claim whose own assertion is governed by a
+  single check from a broader, whole-contract/aggregate Claim (the
+  real `CL-BFS-005`, whose own `depends_on` field names `CL-BFS-001`/
+  `CL-BFS-002`) that merely cites the same bridging Evidence; a single
+  re-verified check passing could silently move a whole-contract
+  Claim's own `evidence_support_state`, contradicting this mechanism's
+  own docstring-asserted (but previously unenforced) single-check
+  scope invariant. Fixed with a new, reused-not-invented
+  `knowledge_intermediate.claim_scope_category` eligibility check
+  (`"superseded"`/`"aggregate"`/`"ambiguous"`/`"eligible"`, built from
+  fields the Claim record already carries — no new scope metadata was
+  introduced), applied at both proposal time (all three
+  `propose_reconciliation` pathways) and, defensively, at apply time.
+  An excluded Claim is never silently discarded — it is recorded in a
+  new, purely informational `[[affected_claims]]` manifest array,
+  never read by `apply_manifest`'s own dispatch. **Defect B**:
+  `write_source_reconciliation_manifest`'s one-second-precision
+  timestamp filename, written unconditionally, could let a second
+  `verify-changes` run for the same slug within the same wall-clock
+  second silently overwrite an earlier, still-pending manifest's own
+  recorded review decision. Fixed with a new, narrow helper,
+  `knowledge_intermediate._write_manifest_exclusive` — exclusive
+  creation via an atomic hardlink from a fully-written temp file
+  (never `os.rename`, which silently replaces an existing destination
+  on POSIX), with a bounded, random-suffix retry on collision; scoped
+  to this one manifest writer only, no new manifest-management
+  subsystem. Covered by 18 new tests (75 total in
+  `tests/test_source_reconciliation.py`); full suite (1533 tests,
+  2 pre-existing skips, 4 pre-existing environmental failures
+  unrelated to this work), both strict validators, and `ruff` (167
+  findings, the established baseline, unchanged) all pass.
+  Re-demonstrated end to end against fresh disposable Ledgerkit
+  scratch copies via the real CLI — editing only `tests/
+  test_reports.py` correctly produced two independent findings for
+  `CL-BFS-001`/`CL-BFS-002`, correctly excluded `CL-BFS-005` from
+  mutation while reporting it affected for both checks, left
+  `CL-BFS-003` (superseded) untouched and unreferenced anywhere,
+  advanced the shared baseline once both sharing checks were resolved,
+  and confirmed detector (b)'s own `CL-BFS-004` reconciliation (via the
+  real, pinned overlapping-account-patterns test) remains fully
+  functional (`planning/retros/phase-89-stage-89a-second-corrective-
+  ledgerkit-demonstration.md`). The real `~/projects/ledgerkit`
+  checkout and the real `balance-from-spec` knowledge base were never
+  modified. A fresh independent `release-phase-auditor` pass
+  live-reproduced both defects end to end against its own disposable
+  Ledgerkit scratch copy (including the hand-crafted-manifest
+  apply-time defensive-refusal check and a cross-manifest
+  same-`OracleResult` no-duplicate-Evidence check for defect B),
+  re-ran the full suite/both validators/`ruff` with identical results,
+  and confirmed governance scope (no edits to `decisions/0096`/`0097`,
+  no Stage 89B/89C creep, both real checkouts untouched) — verdict
+  **PASS**, appended to `planning/retros/_audit-phase-89-stage-89a.md`.
+  The implementation is staged but not yet committed (a direct commit
+  attempt was denied by this session's own auto-mode permission
+  classifier; manual action required — see `planning/CONTEXT.md`).
 - **Phase 89 — third planning amendment (Task A mechanism, Evidence
   identity, exit-gate semantics, baseline freshness) — still planning
   only**: a fresh, independent-orchestrator re-verification found the

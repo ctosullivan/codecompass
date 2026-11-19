@@ -35,6 +35,8 @@ from __future__ import annotations
 import hashlib
 import os
 import re
+import secrets
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -1945,12 +1947,40 @@ def _serialize_manifest_item(item: dict) -> list[str]:
     return lines
 
 
+_AFFECTED_CLAIM_FIELD_ORDER = [
+    "claim_id", "check_id", "contract_id", "run_id", "category", "reason", "outcome",
+    "resolution", "source_path",
+]
+
+
+def _serialize_affected_claim(item: dict) -> list[str]:
+    """`[[affected_claims]]` — a purely informational array-of-tables,
+    parallel to `[[items]]` but never read by `apply_manifest`'s own
+    dispatch (which only ever reads `data["items"]`, `knowledge_
+    intermediate.py::apply_manifest`): a broader/ambiguous Claim a
+    changed check's bridging Evidence reaches but that `claim_scope_
+    category` excluded from automatic mutation (Phase 89A corrective
+    pass, defect A) is reported here, visibly, rather than silently
+    discarded."""
+    lines = ["[[affected_claims]]"]
+    for key in _AFFECTED_CLAIM_FIELD_ORDER:
+        if key not in item:
+            continue
+        lines.append(f"{key} = {_serialize_toml_value(item[key])}")
+    lines.append("")
+    return lines
+
+
 def _serialize_manifest(data: dict) -> str:
     """The single source of truth for the manifest's own TOML shape —
     used both to write a brand-new manifest and, by `apply_manifest`
     (`decisions/0073`, point 2), to read-modify-write an existing one so
     an applied item's own state becomes durable and mechanically
-    distinguishable from a still-pending one."""
+    distinguishable from a still-pending one. `data["affected_claims"]`
+    (Phase 89A corrective pass, defect A), when present, is serialized
+    as its own, separate array-of-tables -- additive, backward
+    compatible: a manifest with no `affected_claims` key (every one
+    written before this corrective pass) round-trips identically."""
     lines = [
         f"manifest_id = {_toml_escape(data['manifest_id'])}",
         f"created = {_toml_escape(data['created'])}",
@@ -1959,7 +1989,61 @@ def _serialize_manifest(data: dict) -> str:
     ]
     for item in data.get("items", []):
         lines += _serialize_manifest_item(item)
+    for aff in data.get("affected_claims", []):
+        lines += _serialize_affected_claim(aff)
     return "\n".join(lines).rstrip() + "\n"
+
+
+def _write_manifest_exclusive(
+    dir_path: Path, base_stem: str, render: Callable[[str], str], *, suffix: str = ".toml",
+) -> Path:
+    """Collision-resistant, append-only manifest creation (Phase 89A
+    corrective pass, defect B). `write_source_reconciliation_manifest`'s
+    own one-second-precision timestamp filename (`write_manifest`'s own
+    pre-existing convention, unchanged elsewhere) could previously be
+    reused by a second verification run landing in the same second,
+    silently overwriting an earlier, still-pending manifest -- losing
+    its own recorded review decisions.
+
+    `render(stem)` returns the full file text for a candidate `stem` --
+    called fresh for each attempt so the text's own embedded
+    `manifest_id` always matches the filename actually used, never a
+    stale one from an earlier, collided attempt.
+
+    Exclusive at the filesystem level: the full text is first written
+    to a private temp file in the same directory, then atomically
+    linked (`os.link`, which fails with `FileExistsError` rather than
+    silently replacing an existing destination the way `os.rename`
+    would on POSIX) to the real candidate path. A process crash while
+    writing the temp file leaves only an orphaned, never-linked `.tmp-`
+    file behind -- never a partial file at a real manifest path that
+    any reader (`rdir.glob("*.toml")`, every existing caller) could
+    ever mistake for a valid manifest. On a genuine collision, a new,
+    short, random disambiguating suffix is appended to the stem and the
+    whole attempt (render + temp-write + link) is retried from scratch,
+    bounded to 1000 attempts -- this module's own explicit retry
+    behaviour (defect B, requirement 4): never raised to the caller as
+    a failure unless collisions persist implausibly many times in a
+    row."""
+    dir_path.mkdir(parents=True, exist_ok=True)
+    stem = base_stem
+    for _attempt in range(1000):
+        text = render(stem)
+        tmp_path = dir_path / f".{stem}{suffix}.tmp-{secrets.token_hex(8)}"
+        tmp_path.write_text(text, encoding="utf-8")
+        final_path = dir_path / f"{stem}{suffix}"
+        try:
+            os.link(tmp_path, final_path)
+        except FileExistsError:
+            stem = f"{base_stem}-{secrets.token_hex(4)}"
+            continue
+        finally:
+            tmp_path.unlink(missing_ok=True)
+        return final_path
+    raise RuntimeError(
+        f"could not create a unique manifest in {dir_path} based on {base_stem!r} "
+        "after 1000 attempts"
+    )
 
 
 def write_manifest(
@@ -2524,6 +2608,62 @@ def _candidate_text_present(md_path: Path, text: str) -> bool:
     return text.strip() in blocks
 
 
+def claim_scope_category(
+    claim: KnowledgeRecord, *, bridging_check_ids: set[str] | None = None,
+) -> tuple[str, str]:
+    """Phase 89A corrective pass, defect A — whether `claim` is
+    eligible for this module's automatic single-check Evidence-append/
+    `evidence_support_state` recomputation (`_apply_source_
+    reconciliation`/`_recompute_evidence_support_state`). Returns
+    `(category, reason)`:
+
+    - `"superseded"` — `claim.status == "superseded"`. A historical
+      assertion (e.g. `CL-BFS-003`), never reactivated by this or any
+      other automatic mechanism.
+    - `"aggregate"` — `claim`'s own `depends_on` field names one or
+      more other Claim records. This is an existing, unambiguous,
+      already-authored structural signal (e.g. `CL-BFS-003`/
+      `CL-BFS-005`'s own `depends_on: [CL-BFS-001, CL-BFS-002]`) that
+      this Claim's own truth is established by *combining* other
+      Claims, never by one check's result alone — reused directly
+      rather than inventing new scope metadata, since it already
+      provides an unambiguous scope relationship.
+    - `"ambiguous"` — only evaluated when `bridging_check_ids` is
+      given (the set of distinct `check_id`s `claim`'s own *existing*
+      `supporting_evidence`/`contradicting_evidence` already bridges
+      to, via existing test-kind Evidence): `claim` has no `depends_on`
+      of its own, but still cites more than one distinct check's
+      worth of bridging Evidence — nothing structural establishes that
+      this Claim is genuinely scoped to a single check, so this fails
+      closed rather than guessing.
+    - `"eligible"` — none of the above; the only category this
+      module's automatic mutation path is ever allowed to act on.
+
+    Fail-closed by construction: every category other than
+    `"eligible"` excludes automatic mutation, and nothing here infers
+    eligibility merely because a Claim cites an `OracleResult`."""
+    if claim.fields.get("status") == "superseded":
+        return "superseded", f"{claim.record_id} is superseded"
+    depends_on_claims = sorted(
+        d for d in _extract_id_strings(claim.fields.get("depends_on", "")) if d.startswith("CL-")
+    )
+    if depends_on_claims:
+        return (
+            "aggregate",
+            f"{claim.record_id}.depends_on names other Claim(s) "
+            f"({', '.join(depends_on_claims)}) -- its own truth is established by combining "
+            "them, not by a single check's result alone",
+        )
+    if bridging_check_ids is not None and len(bridging_check_ids) > 1:
+        return (
+            "ambiguous",
+            f"{claim.record_id} cites test evidence bridging to {len(bridging_check_ids)} "
+            f"distinct checks ({', '.join(sorted(bridging_check_ids))}) with no explicit "
+            "depends_on scoping -- cannot establish this Claim is scoped to a single check",
+        )
+    return "eligible", ""
+
+
 def _recompute_evidence_support_state(
     records: dict[str, KnowledgeRecord], supporting: list[str], contradicting: list[str],
 ) -> str:
@@ -2533,8 +2673,13 @@ def _recompute_evidence_support_state(
     contents, never only the current batch's own findings, so an
     earlier batch's contradiction can never silently disappear. Scoped
     correctly to a single-check Claim, the only kind this mechanism
-    ever writes to (never a whole-contract-scoped Claim like
-    `CL-BFS-003`/`CL-BFS-005`, which this write path never reaches)."""
+    ever writes to — enforced, not merely assumed, by `claim_scope_
+    category` being checked at both proposal time
+    (`source_reconciliation.propose_reconciliation`) and, defensively,
+    at the top of `_apply_source_reconciliation` itself, so a
+    whole-contract-scoped Claim like `CL-BFS-003`/`CL-BFS-005` can
+    never reach this write path even via a hand-edited manifest item
+    (Phase 89A corrective pass, defect A)."""
     if contradicting and supporting:
         return "conflicting"
     if contradicting:
@@ -2576,6 +2721,19 @@ def _apply_source_reconciliation(project_root: Path, slug: str, item: dict) -> A
     claim = records.get(record_id)
     if claim is None:
         return ApplyOutcome(False, item, "Claim no longer exists")
+
+    # Phase 89A corrective pass, defect A: a defensive, fail-closed
+    # backstop -- `propose_reconciliation` already excludes an
+    # aggregate/superseded Claim from ever reaching a manifest item at
+    # all, but this module never trusts an upstream guarantee alone for
+    # the one write path that mutates a Claim in place. A hand-edited
+    # or otherwise malformed manifest item naming such a Claim is
+    # refused here too, before any write.
+    scope_category, scope_reason = claim_scope_category(claim)
+    if scope_category != "eligible":
+        return ApplyOutcome(
+            False, item, f"refusing to apply: {scope_reason} -- never automatically mutated",
+        )
 
     contract_ids = item.get("contributing_contract_ids", [])
     check_ids = item.get("contributing_check_ids", [])

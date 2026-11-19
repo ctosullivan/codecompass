@@ -9,11 +9,13 @@ test_assess_change_impact.py`'s own established convention.
 
 from __future__ import annotations
 
+import os
 import sqlite3
 import subprocess
 import sys
 from pathlib import Path
 
+import pytest
 import yaml
 from typer.testing import CliRunner
 
@@ -1752,3 +1754,515 @@ class TestIdempotentRetryRecovery:
         assert len(evidence_ids) == len(set(evidence_ids))
         baseline_after_retry = sr._read_baseline(project_root, "demo")
         assert baseline_after_retry["tests/test_impl.py"]["content_hash"] == new_hash
+
+
+# ---------------------------------------------------------------------------
+# Phase 89A corrective pass (second round) -- defect A: a whole-contract
+# (aggregate/dependent) or ambiguously-scoped Claim must never be
+# automatically mutated by the single-check Evidence-update/support-
+# state-recomputation path, even though it is genuinely *affected* by
+# the same check's drift that a sibling, genuinely single-check Claim
+# is correctly reconciled against. Mirrors the real Ledgerkit shape
+# (CL-BFS-001/002 single-check, CL-BFS-003 superseded,
+# CL-BFS-005 aggregate via `depends_on`) with a synthetic, generic
+# fixture that also exercises the "ambiguous mapping" case the real
+# records never construct.
+# ---------------------------------------------------------------------------
+
+
+class TestWholeContractClaimScopeProtection:
+    def _setup(self, tmp_path):
+        project_root = tmp_path / "knowledge-root"
+        repo = _build_repo(tmp_path, test_text=_TEST_TEXT_TWO)
+        checks = [
+            _default_check(check_id="chk-a", scope="scope A",
+                            check_reference="tests/test_impl.py::test_ok"),
+            _default_check(check_id="chk-b", scope="scope B",
+                            check_reference="tests/test_impl.py::test_ok_2"),
+        ]
+        contract_path, slug_dir = _setup_slug(project_root, "demo", checks=checks)
+        results_dir = project_root / "planning" / "contracts" / "demo" / "results"
+        result_a = results_dir / "chk-a--r1.yaml"
+        result_b = results_dir / "chk-b--r1.yaml"
+        _write_fake_result(
+            result_a, contract_path, check_id="chk-a", scope="scope A", repo_root=repo
+        )
+        _write_fake_result(
+            result_b, contract_path, check_id="chk-b", scope="scope B", repo_root=repo
+        )
+        _write_flat(slug_dir / "EV-TEST-001.yaml", {
+            "id": "EV-TEST-001", "kind": "evidence", "evidence_kind": "test",
+            "test_ref": f'"{result_a.relative_to(project_root)}"',
+        })
+        _write_flat(slug_dir / "EV-TEST-002.yaml", {
+            "id": "EV-TEST-002", "kind": "evidence", "evidence_kind": "test",
+            "test_ref": f'"{result_b.relative_to(project_root)}"',
+        })
+        # Genuinely single-check Claims (CL-BFS-001/002's own real shape):
+        # no depends_on, bridged from exactly one check each.
+        _write_flat(slug_dir / "CL-DEMO-001.yaml", {
+            "id": "CL-DEMO-001", "kind": "claim",
+            "supporting_evidence": ["EV-TEST-001"], "contradicting_evidence": [],
+            "evidence_support_state": "partially_supported",
+        })
+        _write_flat(slug_dir / "CL-DEMO-002.yaml", {
+            "id": "CL-DEMO-002", "kind": "claim",
+            "supporting_evidence": ["EV-TEST-002"], "contradicting_evidence": [],
+            "evidence_support_state": "partially_supported",
+        })
+        # Aggregate Claim (CL-BFS-005's own real shape): depends_on
+        # names the two single-check Claims above, and also happens to
+        # cite both checks' own bridging Evidence directly.
+        _write_flat(slug_dir / "CL-DEMO-AGG.yaml", {
+            "id": "CL-DEMO-AGG", "kind": "claim",
+            "supporting_evidence": ["EV-TEST-001", "EV-TEST-002"], "contradicting_evidence": [],
+            "evidence_support_state": "partially_supported",
+            "depends_on": ["CL-DEMO-001", "CL-DEMO-002"],
+        })
+        # Superseded Claim (CL-BFS-003's own real shape): bridged from
+        # chk-a's own Evidence, but historical -- never touched.
+        _write_flat(slug_dir / "CL-DEMO-SUPERSEDED.yaml", {
+            "id": "CL-DEMO-SUPERSEDED", "kind": "claim",
+            "supporting_evidence": ["EV-TEST-001"], "contradicting_evidence": [],
+            "evidence_support_state": "supported", "status": "superseded",
+        })
+        # Ambiguous Claim: no depends_on of its own, but cites BOTH
+        # checks' own bridging Evidence directly -- nothing structural
+        # says this Claim is scoped to one check in particular.
+        _write_flat(slug_dir / "CL-DEMO-AMBIGUOUS.yaml", {
+            "id": "CL-DEMO-AMBIGUOUS", "kind": "claim",
+            "supporting_evidence": ["EV-TEST-001", "EV-TEST-002"], "contradicting_evidence": [],
+            "evidence_support_state": "partially_supported",
+        })
+        original_hash = oracle.sha256_file(repo / "tests" / "test_impl.py")
+        sr.establish_source_baseline(project_root, "demo", "tests/test_impl.py", original_hash)
+        graph_db = _sync_graph(repo)
+        (repo / "tests" / "test_impl.py").write_text(
+            _TEST_TEXT_TWO + "\n# edit\n", encoding="utf-8"
+        )
+        graph_db = _sync_graph(repo)
+        return project_root, repo, contract_path, slug_dir, graph_db, original_hash
+
+    def _propose(self, project_root, repo, graph_db):
+        source_result = sr.detect_source_changes(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db
+        )
+        return sr.propose_reconciliation(
+            project_root, "demo", repo_root=repo, target_graph_db=graph_db,
+            source_changes=source_result,
+        )
+
+    def test_aggregate_claim_citing_two_checks_is_affected_not_mutated(self, tmp_path):
+        project_root, repo, _cp, slug_dir, graph_db, _oh = self._setup(tmp_path)
+        proposal = self._propose(project_root, repo, graph_db)
+        assert {f.claim_id for f in proposal.findings} == {"CL-DEMO-001", "CL-DEMO-002"}
+        agg_affected = [a for a in proposal.affected_claims if a.claim_id == "CL-DEMO-AGG"]
+        assert {a.check_id for a in agg_affected} == {"chk-a", "chk-b"}
+        assert all(a.category == "aggregate" for a in agg_affected)
+        manifest_path = sr.write_source_reconciliation_manifest(
+            project_root, "demo", proposal.findings, repo_root=repo, target_graph_db=graph_db,
+            baseline_eligible_test_input_paths=proposal.baseline_eligible_test_input_paths,
+            affected_claims=proposal.affected_claims,
+        )
+        import tomllib
+        before_hash = ki.sha256_text(
+            (slug_dir / "CL-DEMO-AGG.yaml").read_text(encoding="utf-8")
+        )
+        data = tomllib.loads(manifest_path.read_text(encoding="utf-8"))
+        assert {item["record_id"] for item in data["items"]} == {"CL-DEMO-001", "CL-DEMO-002"}
+        for item in data["items"]:
+            item["decision"] = "accept"
+        manifest_path.write_text(ki._serialize_manifest(data), encoding="utf-8")
+        result = ki.apply_manifest(project_root, manifest_path)
+        assert len(result.applied) == 2
+        after_hash = ki.sha256_text(
+            (slug_dir / "CL-DEMO-AGG.yaml").read_text(encoding="utf-8")
+        )
+        assert before_hash == after_hash  # never mutated, byte-identical
+
+    def test_superseded_claim_is_never_touched_or_reported(self, tmp_path):
+        project_root, repo, _cp, slug_dir, graph_db, _oh = self._setup(tmp_path)
+        proposal = self._propose(project_root, repo, graph_db)
+        assert not any(f.claim_id == "CL-DEMO-SUPERSEDED" for f in proposal.findings)
+        assert not any(
+            a.claim_id == "CL-DEMO-SUPERSEDED" for a in proposal.affected_claims
+        )
+        before_hash = ki.sha256_text(
+            (slug_dir / "CL-DEMO-SUPERSEDED.yaml").read_text(encoding="utf-8")
+        )
+        manifest_path = sr.write_source_reconciliation_manifest(
+            project_root, "demo", proposal.findings, repo_root=repo, target_graph_db=graph_db,
+            baseline_eligible_test_input_paths=proposal.baseline_eligible_test_input_paths,
+            affected_claims=proposal.affected_claims,
+        )
+        import tomllib
+        data = tomllib.loads(manifest_path.read_text(encoding="utf-8"))
+        for item in data["items"]:
+            item["decision"] = "accept"
+        manifest_path.write_text(ki._serialize_manifest(data), encoding="utf-8")
+        ki.apply_manifest(project_root, manifest_path)
+        after_hash = ki.sha256_text(
+            (slug_dir / "CL-DEMO-SUPERSEDED.yaml").read_text(encoding="utf-8")
+        )
+        assert before_hash == after_hash
+
+    def test_ambiguous_claim_mapping_fails_closed(self, tmp_path):
+        project_root, repo, _cp, _sd, graph_db, _oh = self._setup(tmp_path)
+        proposal = self._propose(project_root, repo, graph_db)
+        assert not any(f.claim_id == "CL-DEMO-AMBIGUOUS" for f in proposal.findings)
+        ambiguous = [a for a in proposal.affected_claims if a.claim_id == "CL-DEMO-AMBIGUOUS"]
+        assert {a.check_id for a in ambiguous} == {"chk-a", "chk-b"}
+        assert all(a.category == "ambiguous" for a in ambiguous)
+
+    def test_genuinely_single_check_claim_is_eligible_and_mutated(self, tmp_path):
+        project_root, repo, _cp, slug_dir, graph_db, _oh = self._setup(tmp_path)
+        proposal = self._propose(project_root, repo, graph_db)
+        manifest_path = sr.write_source_reconciliation_manifest(
+            project_root, "demo", proposal.findings, repo_root=repo, target_graph_db=graph_db,
+            baseline_eligible_test_input_paths=proposal.baseline_eligible_test_input_paths,
+            affected_claims=proposal.affected_claims,
+        )
+        import tomllib
+        data = tomllib.loads(manifest_path.read_text(encoding="utf-8"))
+        for item in data["items"]:
+            item["decision"] = "accept"
+        manifest_path.write_text(ki._serialize_manifest(data), encoding="utf-8")
+        ki.apply_manifest(project_root, manifest_path)
+        records = ki.load_slug_records(slug_dir)
+        assert records["CL-DEMO-001"].fields["evidence_support_state"] == "supported"
+        assert records["CL-DEMO-002"].fields["evidence_support_state"] == "supported"
+
+    def test_apply_refuses_hand_crafted_manifest_item_against_aggregate_claim(self, tmp_path):
+        """Defensive fail-closed backstop: even a manifest item that
+        never went through `propose_reconciliation`'s own gate (e.g.
+        hand-edited, or produced by a future/third-party writer) is
+        refused by `_apply_source_reconciliation` itself."""
+        project_root, repo, _cp, slug_dir, graph_db, _oh = self._setup(tmp_path)
+        before_hash = ki.sha256_text(
+            (slug_dir / "CL-DEMO-AGG.yaml").read_text(encoding="utf-8")
+        )
+        claim_text = (slug_dir / "CL-DEMO-AGG.yaml").read_text(encoding="utf-8")
+        data = {
+            "manifest_id": "demo@hand-crafted", "created": "2026-11-18T00:00:00Z",
+            "slug": "demo",
+            "items": [{
+                "kind": "source_reconciliation",
+                "record_id": "CL-DEMO-AGG",
+                "base_claim_hash": ki.sha256_text(claim_text),
+                "repo_root": str(repo),
+                "contributing_source_paths": [],
+                "contributing_source_hashes": [],
+                "contributing_contract_ids": ["REQ-X-001"],
+                "contributing_check_ids": ["chk-a"],
+                "contributing_run_ids": ["r1"],
+                "contributing_raw_output_refs": [""],
+                "contributing_labels": ["re_confirmed"],
+                "contributing_target_fields": ["supporting_evidence"],
+                "contributing_what_it_shows": ["hand-crafted"],
+                "contributing_repository_revisions": ["unknown"],
+                "state": "pending", "decision": "accept",
+            }],
+        }
+        manifest_path = (
+            project_root / "planning" / "knowledge" / "demo" / "reconciliation"
+            / "hand-crafted.toml"
+        )
+        manifest_path.parent.mkdir(parents=True, exist_ok=True)
+        manifest_path.write_text(ki._serialize_manifest(data), encoding="utf-8")
+        result = ki.apply_manifest(project_root, manifest_path)
+        assert len(result.applied) == 0
+        assert len(result.skipped) == 1
+        assert "never automatically mutated" in result.skipped[0].reason
+        after_hash = ki.sha256_text(
+            (slug_dir / "CL-DEMO-AGG.yaml").read_text(encoding="utf-8")
+        )
+        assert before_hash == after_hash
+
+    def test_shared_baseline_advances_despite_excluded_aggregate_claim(self, tmp_path):
+        """Baseline eligibility is decided per-CHECK (`required_by_path`/
+        `accounted_by_path`), never per-Claim -- excluding the aggregate
+        Claim from mutation must not block the shared file's baseline
+        from advancing once both checks sharing it are genuinely,
+        validly accounted for."""
+        project_root, repo, _cp, _sd, graph_db, original_hash = self._setup(tmp_path)
+        proposal = self._propose(project_root, repo, graph_db)
+        assert "tests/test_impl.py" in proposal.baseline_eligible_test_input_paths
+        manifest_path = sr.write_source_reconciliation_manifest(
+            project_root, "demo", proposal.findings, repo_root=repo, target_graph_db=graph_db,
+            baseline_eligible_test_input_paths=proposal.baseline_eligible_test_input_paths,
+            affected_claims=proposal.affected_claims,
+        )
+        import tomllib
+        data = tomllib.loads(manifest_path.read_text(encoding="utf-8"))
+        for item in data["items"]:
+            item["decision"] = "accept"
+        manifest_path.write_text(ki._serialize_manifest(data), encoding="utf-8")
+        ki.apply_manifest(project_root, manifest_path)
+        data_after = tomllib.loads(manifest_path.read_text(encoding="utf-8"))
+        for item in data_after["items"]:
+            if item.get("kind") == "source_reconciliation" and item.get("state") == "applied":
+                sr.advance_baselines_for_applied_item(
+                    project_root, "demo", item, manifest_items=data_after["items"],
+                )
+        baseline = sr._read_baseline(project_root, "demo")
+        new_hash = oracle.sha256_file(repo / "tests" / "test_impl.py")
+        assert new_hash != original_hash
+        assert baseline["tests/test_impl.py"]["content_hash"] == new_hash
+
+    def test_affected_claims_survive_apply_manifest_rewrite(self, tmp_path):
+        project_root, repo, _cp, _sd, graph_db, _oh = self._setup(tmp_path)
+        proposal = self._propose(project_root, repo, graph_db)
+        manifest_path = sr.write_source_reconciliation_manifest(
+            project_root, "demo", proposal.findings, repo_root=repo, target_graph_db=graph_db,
+            baseline_eligible_test_input_paths=proposal.baseline_eligible_test_input_paths,
+            affected_claims=proposal.affected_claims,
+        )
+        import tomllib
+        before = tomllib.loads(manifest_path.read_text(encoding="utf-8"))
+        assert len(before["affected_claims"]) == 4  # CL-DEMO-AGG x2 + CL-DEMO-AMBIGUOUS x2
+        for item in before["items"]:
+            item["decision"] = "accept"
+        manifest_path.write_text(ki._serialize_manifest(before), encoding="utf-8")
+        ki.apply_manifest(project_root, manifest_path)  # rewrites the manifest in place
+        after = tomllib.loads(manifest_path.read_text(encoding="utf-8"))
+        assert after["affected_claims"] == before["affected_claims"]
+
+
+# ---------------------------------------------------------------------------
+# Phase 89A corrective pass (second round) -- defect A unit coverage of
+# `claim_scope_category` itself, independent of the full detection/
+# proposal pipeline above.
+# ---------------------------------------------------------------------------
+
+
+class TestClaimScopeCategory:
+    def _claim(self, tmp_path, fields):
+        path = tmp_path / "CL-X-001.yaml"
+        _write_flat(path, {"id": "CL-X-001", "kind": "claim", **fields})
+        return ki.load_slug_records(tmp_path)["CL-X-001"]
+
+    def test_superseded_takes_priority_over_everything_else(self, tmp_path):
+        claim = self._claim(tmp_path, {
+            "status": "superseded", "depends_on": ["CL-X-002", "CL-X-003"],
+        })
+        category, reason = ki.claim_scope_category(claim, bridging_check_ids={"a", "b"})
+        assert category == "superseded"
+        assert "CL-X-001" in reason
+
+    def test_depends_on_naming_one_claim_is_aggregate(self, tmp_path):
+        claim = self._claim(tmp_path, {"depends_on": ["CL-X-002"]})
+        category, reason = ki.claim_scope_category(claim)
+        assert category == "aggregate"
+        assert "CL-X-002" in reason
+
+    def test_depends_on_naming_two_claims_is_aggregate(self, tmp_path):
+        claim = self._claim(tmp_path, {"depends_on": ["CL-X-002", "CL-X-003"]})
+        category, _reason = ki.claim_scope_category(claim, bridging_check_ids={"a", "b"})
+        assert category == "aggregate"  # depends_on checked before the ambiguous test
+
+    def test_multi_check_bridging_with_no_depends_on_is_ambiguous(self, tmp_path):
+        claim = self._claim(tmp_path, {})
+        category, reason = ki.claim_scope_category(claim, bridging_check_ids={"chk-a", "chk-b"})
+        assert category == "ambiguous"
+        assert "chk-a" in reason and "chk-b" in reason
+
+    def test_single_check_bridging_is_eligible(self, tmp_path):
+        claim = self._claim(tmp_path, {})
+        category, reason = ki.claim_scope_category(claim, bridging_check_ids={"chk-a"})
+        assert category == "eligible"
+        assert reason == ""
+
+    def test_no_depends_on_and_bridging_not_evaluated_is_eligible(self, tmp_path):
+        """Detector (b) never passes `bridging_check_ids` at all -- its
+        own single-check-to-single-Claim resolution is already
+        fail-closed via a different mechanism (the Requirement's own
+        `depends_on`-length guard)."""
+        claim = self._claim(tmp_path, {})
+        category, reason = ki.claim_scope_category(claim)
+        assert category == "eligible"
+        assert reason == ""
+
+
+# ---------------------------------------------------------------------------
+# Phase 89A corrective pass (second round) -- defect B: manifest
+# filename collision. `write_source_reconciliation_manifest`'s own
+# one-second-precision timestamp filename must never let a second
+# verification run overwrite an earlier, still-pending manifest.
+# ---------------------------------------------------------------------------
+
+
+def _frozen_datetime(moment):
+    from datetime import datetime as _real_datetime
+
+    class _Frozen(_real_datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return moment if tz is None else moment.astimezone(tz)
+
+    return _Frozen
+
+
+class TestManifestCollisionResistance:
+    def _setup(self, tmp_path):
+        project_root = tmp_path / "knowledge-root"
+        repo = _build_repo(tmp_path)
+        contract_path, slug_dir = _setup_slug(project_root, "demo", checks=[_default_check()])
+        _write_flat(slug_dir / "CL-DEMO-001.yaml", {
+            "id": "CL-DEMO-001", "kind": "claim",
+            "supporting_evidence": [], "contradicting_evidence": [],
+            "evidence_support_state": "unsupported",
+        })
+        _write_flat(slug_dir / "CL-DEMO-002.yaml", {
+            "id": "CL-DEMO-002", "kind": "claim",
+            "supporting_evidence": [], "contradicting_evidence": [],
+            "evidence_support_state": "unsupported",
+        })
+        result_path = (
+            project_root / "planning" / "contracts" / "demo" / "results" / "chk-a--r1.yaml"
+        )
+        _write_fake_result(result_path, contract_path, check_id="chk-a", repo_root=repo)
+        rel = result_path.relative_to(project_root)
+        finding1 = sr.ContributingFinding(
+            claim_id="CL-DEMO-001", contract_id="REQ-X-001", check_id="chk-a", run_id="r1",
+            raw_output_ref=f"{rel}", label="newly_covered", target_field="supporting_evidence",
+            what_it_shows="first", repository_revision="unknown",
+        )
+        finding2 = sr.ContributingFinding(
+            claim_id="CL-DEMO-002", contract_id="REQ-X-001", check_id="chk-a", run_id="r1",
+            raw_output_ref=f"{rel}", label="newly_covered", target_field="supporting_evidence",
+            what_it_shows="second", repository_revision="unknown",
+        )
+        return project_root, repo, slug_dir, finding1, finding2
+
+    def test_two_manifests_in_the_same_frozen_second_do_not_collide(self, tmp_path, monkeypatch):
+        from datetime import UTC, datetime
+        project_root, repo, _sd, finding1, finding2 = self._setup(tmp_path)
+        moment = datetime(2026, 11, 18, 12, 0, 0, tzinfo=UTC)
+        monkeypatch.setattr(sr, "datetime", _frozen_datetime(moment))
+        path1 = sr.write_source_reconciliation_manifest(
+            project_root, "demo", [finding1], repo_root=repo,
+        )
+        path2 = sr.write_source_reconciliation_manifest(
+            project_root, "demo", [finding2], repo_root=repo,
+        )
+        assert path1 != path2
+        assert path1.is_file() and path2.is_file()
+        import tomllib
+        data1 = tomllib.loads(path1.read_text(encoding="utf-8"))
+        data2 = tomllib.loads(path2.read_text(encoding="utf-8"))
+        assert data1["manifest_id"] != data2["manifest_id"]
+        assert data1["items"][0]["record_id"] == "CL-DEMO-001"
+        assert data2["items"][0]["record_id"] == "CL-DEMO-002"
+
+    def test_existing_review_decision_survives_a_colliding_second_write(
+        self, tmp_path, monkeypatch,
+    ):
+        from datetime import UTC, datetime
+        project_root, repo, _sd, finding1, finding2 = self._setup(tmp_path)
+        moment = datetime(2026, 11, 18, 12, 0, 0, tzinfo=UTC)
+        monkeypatch.setattr(sr, "datetime", _frozen_datetime(moment))
+        path1 = sr.write_source_reconciliation_manifest(
+            project_root, "demo", [finding1], repo_root=repo,
+        )
+        import tomllib
+        data1 = tomllib.loads(path1.read_text(encoding="utf-8"))
+        data1["items"][0]["decision"] = "accept"
+        path1.write_text(ki._serialize_manifest(data1), encoding="utf-8")
+        before_text = path1.read_text(encoding="utf-8")
+        path2 = sr.write_source_reconciliation_manifest(
+            project_root, "demo", [finding2], repo_root=repo,
+        )
+        assert path1.read_text(encoding="utf-8") == before_text  # never touched
+        assert path2 != path1
+        data1_after = tomllib.loads(path1.read_text(encoding="utf-8"))
+        assert data1_after["items"][0]["decision"] == "accept"
+
+    def test_both_colliding_manifests_apply_correctly_and_idempotently(
+        self, tmp_path, monkeypatch,
+    ):
+        from datetime import UTC, datetime
+        project_root, repo, slug_dir, finding1, finding2 = self._setup(tmp_path)
+        moment = datetime(2026, 11, 18, 12, 0, 0, tzinfo=UTC)
+        monkeypatch.setattr(sr, "datetime", _frozen_datetime(moment))
+        path1 = sr.write_source_reconciliation_manifest(
+            project_root, "demo", [finding1], repo_root=repo,
+        )
+        path2 = sr.write_source_reconciliation_manifest(
+            project_root, "demo", [finding2], repo_root=repo,
+        )
+        import tomllib
+        for path in (path1, path2):
+            data = tomllib.loads(path.read_text(encoding="utf-8"))
+            data["items"][0]["decision"] = "accept"
+            path.write_text(ki._serialize_manifest(data), encoding="utf-8")
+        result1 = ki.apply_manifest(project_root, path1)
+        result2 = ki.apply_manifest(project_root, path2)
+        assert len(result1.applied) == 1
+        assert len(result2.applied) == 1
+        records = ki.load_slug_records(slug_dir)
+        # Both manifests cited the SAME real OracleResult identity
+        # (contract_id, check_id, run_id) -- never duplicate Evidence
+        # merely because two distinct manifests reference it.
+        evidence_ids = [r.record_id for r in records.values() if r.kind == "evidence"]
+        assert len(evidence_ids) == 1
+        assert records["CL-DEMO-001"].fields["supporting_evidence"] == records[
+            "CL-DEMO-002"
+        ].fields["supporting_evidence"]
+        # Retrying both is still idempotent -- no new Evidence, no error
+        # (each manifest's own item is already `state == "applied"`, so
+        # `apply_manifest`'s own generic loop short-circuits it as a
+        # harmless skip, never re-dispatching to `_apply_source_
+        # reconciliation` at all).
+        result1_retry = ki.apply_manifest(project_root, path1)
+        result2_retry = ki.apply_manifest(project_root, path2)
+        assert len(result1_retry.applied) == 0
+        assert len(result2_retry.applied) == 0
+        assert result1_retry.skipped[0].reason == "already applied (state=applied)"
+        assert result2_retry.skipped[0].reason == "already applied (state=applied)"
+        records_after_retry = ki.load_slug_records(slug_dir)
+        evidence_ids_after_retry = [
+            r.record_id for r in records_after_retry.values() if r.kind == "evidence"
+        ]
+        assert len(evidence_ids_after_retry) == 1
+
+    def test_interrupted_creation_never_leaves_a_valid_partial_manifest(
+        self, tmp_path, monkeypatch,
+    ):
+        """A failure between the temp-file write and the atomic link
+        (simulating an interruption) must never leave a readable,
+        half-written file at a real manifest path."""
+        dir_path = tmp_path / "reconciliation"
+        real_link = os.link
+
+        def _boom(src, dst):
+            raise OSError("simulated interruption")
+
+        monkeypatch.setattr(os, "link", _boom)
+        with pytest.raises(OSError):
+            ki._write_manifest_exclusive(dir_path, "20261118T120000Z-source", lambda stem: "x")
+        monkeypatch.setattr(os, "link", real_link)
+        assert not (dir_path / "20261118T120000Z-source.toml").exists()
+        assert list(dir_path.glob("*.tmp-*")) == []  # cleaned up, nothing orphaned
+
+    def test_collision_retry_regenerates_content_for_the_new_stem(self, tmp_path):
+        """`render` is called fresh per attempt so a disambiguated
+        filename's own embedded `manifest_id` always matches it --
+        never a stale value computed for the first, collided stem."""
+        dir_path = tmp_path / "reconciliation"
+        dir_path.mkdir()
+        (dir_path / "20261118T120000Z-source.toml").write_text("existing", encoding="utf-8")
+        seen_stems = []
+
+        def _render(stem):
+            seen_stems.append(stem)
+            return f"manifest_id = \"demo@{stem}\"\n"
+
+        result_path = ki._write_manifest_exclusive(
+            dir_path, "20261118T120000Z-source", _render,
+        )
+        assert result_path != dir_path / "20261118T120000Z-source.toml"
+        expected_text = f'manifest_id = "demo@{result_path.stem}"\n'
+        assert result_path.read_text(encoding="utf-8") == expected_text
+        assert len(seen_stems) == 2  # one collided attempt, one that succeeded
+        # The pre-existing file must be completely untouched.
+        assert (dir_path / "20261118T120000Z-source.toml").read_text(encoding="utf-8") == "existing"

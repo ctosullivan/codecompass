@@ -1751,13 +1751,28 @@ def knowledge_verify_changes(
         project_root, slug, findings,
         repo_root=repo_root, target_graph_db=repo_root / "context-graph.db",
         baseline_eligible_test_input_paths=proposal.baseline_eligible_test_input_paths,
+        affected_claims=proposal.affected_claims,
     )
     if json_output:
         console.print_json(data={
             "manifest_path": str(manifest_path) if manifest_path else None,
             "proposed_findings": len(findings),
+            "affected_claims": [
+                {"claim_id": a.claim_id, "check_id": a.check_id, "category": a.category,
+                 "reason": a.reason}
+                for a in proposal.affected_claims
+            ],
         })
         return
+    # Phase 89A corrective pass, defect A: a broader/ambiguous Claim a
+    # changed check's bridging Evidence reaches is reported here --
+    # visibly, never silently discarded -- but is never automatically
+    # mutated; see decisions/0098 (Phase 89A second corrective pass).
+    for a in proposal.affected_claims:
+        console.print(
+            f"[yellow]affected, not auto-reconciled[/yellow]: {a.claim_id} "
+            f"(check {a.check_id!r}, {a.category}) -- {a.reason}"
+        )
     if manifest_path is None:
         console.print("[green]nothing proposable[/green] — no finding survived verification")
         return
