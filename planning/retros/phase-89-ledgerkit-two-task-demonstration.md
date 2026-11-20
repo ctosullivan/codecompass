@@ -182,3 +182,62 @@ Task B itself is **not executed** under this dispatch's own
 authorisation (Stage 89A only) — its controlled comparison belongs to
 Stage 89C. This record is the complete, committed pre-registration
 Stage 89C's own implementer must execute against verbatim.
+
+## 10. Actual Stage 89C execution and result (2026-11-21)
+
+Executed under governing dispatch "CodeCompass Orchestrator — Final
+Stage 89C Corrections, Verification and Implementation," against the
+plan at `planning/phase-89-stage-89c-task-b-controlled-comparison.md`
+(commit `b0b2ef8`). This section is appended after the fact, strictly
+below the original pre-registration (§§1-9 above are unmodified from
+when they were first committed, before either arm's own outcome was
+known) — nothing above this line was altered to fit the result below.
+
+**Result: the pre-registered success criterion (§7 above) was NOT
+met.** All three of its own named signals came out tied:
+
+1. **Acceptance-test divergence** — tied. Both arms' implementations
+   passed the independently-authored, pinned 11-method acceptance
+   suite 11/11, including the primary `overlapping-account-patterns-
+   no-double-count` scope (a genuine, provenance-tracked `OracleResult`,
+   `PASS` for both arms).
+2. **Context-evaluator verdict** — tied. Both arms: PASS WITH GAPS.
+3. **Context-advantage rating** — tied. Both arms: LOW.
+
+Per this pre-registration's own §7 rule ("A tie... does not satisfy the
+positive exit gate"), this is reported as **GATE NOT MET**, not as an
+ambiguous or partial result. The independent `context-evaluator`'s own
+analysis (full detail: `planning/reference-projects/ledgerkit/
+08-stage-89c-evaluation.md`) found the proximate cause: Task B's own
+pinned framing (§3 above, reproduced verbatim in both arms' dispatch
+prompts) already states the correct design boundary explicitly ("this
+constructor itself performs no aggregation and calls no posting-
+matching logic"), and `balance_from_spec`'s own relevant code is short
+and directly readable — both arms independently re-derived the correct,
+no-additional-dedup-logic answer straight from source, with or without
+the treatment arm's own supplied Evidence item. This is precisely the
+confound this plan's own §1 `L-027` equal-raw-access check exists to
+catch, and it was caught, not missed: the comparison is valid, and its
+result is a credible negative, not a contaminated or inconclusive one.
+A full independent `release-phase-auditor` pass
+(`planning/reference-projects/ledgerkit/08-stage-89c-procedural-audit.md`)
+confirmed the trial's own procedural fidelity, PASS WITH NON-BLOCKING
+OBSERVATIONS (one disclosed, independently-confirmed allocation-
+blinding leak in raw oracle transcripts, assessed as immaterial given
+the tie on every signal — never silently excused, reported in full in
+the procedural-audit report and the composite result report).
+
+Full result detail, every gate, every artifact: `planning/
+reference-projects/ledgerkit/08-stage-89c-task-b-controlled-comparison.md`
+(the plan's own §9 reporting schema, filled in with this trial's real
+results) and its sibling `08-stage-89c-*.md` files in that same
+directory.
+
+**This section records what happened; it does not reinterpret §§1-9
+above, retrospectively adjust the success criterion, or substitute a
+different task.** Per `L-133`, this negative result is evidence about
+this specific mechanism and this specific bounded task — it does not
+establish that CodeCompass knowledge reconciliation lacks value in
+general, and does not establish that a differently-shaped task (one
+where the decisive fact is not independently re-derivable from a short,
+direct source read) would behave the same way.

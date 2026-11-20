@@ -7,7 +7,49 @@ session-resumption, not a project history.
 
 ## Current phase
 
-**Phase 88 — Agent Integration and MCP — is `done` (2026-11-15)**.
+**Current phase: Phase 89 — Incremental Knowledge and Documentation
+Reconciliation — remains `in progress`, NOT `done` (2026-11-21).** Stage
+89A (detection/reconciliation mechanism) and Stage 89B (the
+`claim_contradicted_by_fresh_check` gap kind plus a real
+documentation-cascade demonstration) are both implemented and
+independently audited **PASS**. **Stage 89C (the pre-registered Task B
+controlled comparison) has now been executed in full** — two isolated
+development arms, independent verification, an independent
+`context-evaluator` dispatch, and an independent `release-phase-auditor`
+dispatch all ran for real, against pinned Ledgerkit commit
+`a7740fd04fe1814d2a557bfcb67a9a775a4a22f9` and CodeCompass commit
+`b0b2ef8`. **Gates 1 and 2 of Stage 89C's own plan are met** (both arms
+produced a buildable, independently-verified implementation; the
+comparison itself was validly executed — auditor verdict **PASS WITH
+NON-BLOCKING OBSERVATIONS**, one disclosed, immaterial allocation-
+blinding leak in raw oracle transcripts, filed `L-139`). **Gate 3 is NOT
+MET**: all three pre-registered success signals (acceptance-test
+divergence, evaluator verdict, evaluator rating) came out tied, so no
+positive comparative advantage was demonstrated — reported as a credible
+negative finding, not a contaminated or inconclusive one. **Phase 89's
+own roadmap-level positive exit gate (§9 of its plan) is therefore also
+NOT met, and Phase 89 is not marked `done`.** Full result:
+`planning/reference-projects/ledgerkit/08-stage-89c-task-b-controlled-
+comparison.md` and its sibling `08-stage-89c-*.md` files; the
+pre-registration's own appended §10
+(`planning/retros/phase-89-ledgerkit-two-task-demonstration.md`); the
+stage's own retro (`planning/retros/phase-89-stage-89c.md`). Two
+candidate learnings were triaged by `knowledge-curator`: `L-139`
+(promoted, `planning/ROADMAP.md` "Future-improvement backlog") and
+`L-140` (a real, reproducible defect in `src/codecompass/
+knowledge_api.py`'s `_summarize_record`/`_bound_context_items` — per-item
+`summary` truncation silently contradicts the packet's own
+`bounds.truncated` flag — classification `invariant`, left
+`status: candidate` in `planning/learnings/inbox.md`, recommended for
+near-term scheduling rather than the unscheduled backlog, **not fixed**
+— out of Stage 89C's own authorised scope). The next decision (whether
+to design a follow-up trial with a task more likely to expose a real
+effect, or to treat this question as answered-for-now and move to Phase
+90) is a strategic choice for a future, separately authorised session —
+not made by this reconciliation. **Phase 90 is explicitly not started.**
+
+Kept below for continuity — **Phase 88 — Agent Integration and MCP — is
+`done` (2026-11-15)**.
 Stage 88A, Stage 88B plus the real Ledgerkit demonstration, learnings
 triage, both terminal-audit corrective passes, and the terminal
 roadmap/CONTEXT/plan-file reconciliation are all committed and pushed
@@ -142,7 +184,10 @@ This work was begun, per this dispatch's own explicit "proceed
 directly to Stage 89B" instruction on a PASS/PASS-WITH-OBSERVATIONS
 Stage 89A verdict, before the third Stage 89A audit's own FAIL was
 known — a disclosed sequencing artifact, not a concealment, covered in
-the final completion report. Stage 89C is not started.** Independently
+the final completion report. **Stage 89C has since been executed in
+full — see the "Current phase" anchor statement at the top of this
+section for the real result (Gates 1/2 met, Gate 3 NOT MET, Phase 89
+remains `in progress`).** Independently
 deliverable per
 `decisions/0085` §3 (its
 prerequisites are Phase 84 and Phase 87 only, not Phase 88). The plan
@@ -896,6 +941,56 @@ and each phase's retro.
 
 ## What was just completed
 
+**Phase 89 Stage 89C — the pre-registered Task B controlled comparison
+— executed, independently verified, and independently audited**,
+2026-11-21 (commits through `b0b2ef8`). Two isolated development arms
+implemented `ReportSpec.with_combined_section` on Ledgerkit (pinned
+`a7740fd04fe1814d2a557bfcb67a9a775a4a22f9`, confirmed never substituted);
+both verified 11/11 on the pinned acceptance suite with a genuine
+`OracleResult` `PASS`; an independent `context-evaluator` rated both
+drafts identically (PASS WITH GAPS / LOW); an independent
+`release-phase-auditor` returned **PASS WITH NON-BLOCKING OBSERVATIONS**
+(one real, disclosed, immaterial allocation-blinding leak in raw oracle
+transcripts, filed `L-139`). **The pre-registered positive success
+criterion was NOT met — a tie on all three signals (acceptance-test
+divergence, evaluator verdict, evaluator rating) — so Gate 3 and Phase
+89's own roadmap-level exit gate both read GATE NOT MET.** This is a
+credible negative finding, not a contaminated or inconclusive one: both
+arms independently re-derived the correct design answer from a short,
+direct source read, aided by the task's own pinned framing sentence,
+regardless of which context packet either received. Two candidate
+learnings triaged by `knowledge-curator`: `L-139` (promoted,
+`planning/ROADMAP.md` backlog) and `L-140` (a real defect in
+`get_context_packet`'s per-item `summary` truncation silently
+contradicting its own `bounds.truncated` flag — classification
+`invariant`, left `status: candidate`, recommended for near-term
+scheduling, not fixed under this stage's own scope). Full detail: see
+"Current phase" above; `planning/reference-projects/ledgerkit/
+08-stage-89c-task-b-controlled-comparison.md`; `planning/retros/
+phase-89-stage-89c.md`. **Phase 89 remains `in progress`, not `done`.**
+
+**Phase 89 Stages 89A and 89B** (detection/manifest-extension mechanism;
+the `claim_contradicted_by_fresh_check` gap kind plus a real
+documentation-cascade demonstration) were implemented and independently
+audited **PASS** earlier in this same phase, each after one or more
+corrective passes — full detail preserved in "Current phase" above and
+in `planning/retros/phase-89-stage-89a.md`/`phase-89-stage-89b.md`.
+
+**Phase 88 — Agent Integration and MCP — was implemented end to end and
+marked `done`** (2026-11-15): Stage 88A (MCP foundation, nine read-only
+tools), Stage 88B (assurance integration) plus a real Ledgerkit
+development demonstration, learnings triage (`L-131`-`L-134`), two
+terminal-audit corrective passes, and the terminal roadmap/CONTEXT
+reconciliation (`4615691`) all landed and were pushed; a later real-agent
+MCP acceptance exercise (a genuine `claude` CLI client over real MCP
+stdio transport) supplied additional real-client evidence without
+reopening the phase's already-`done` status. Full detail preserved in
+"Current phase" above.
+
+**Older history below this point (Phase 87 and earlier) predates both
+Phase 88 and Phase 89 and is preserved only for continuity — it was not
+re-verified as part of this reconciliation.**
+
 **Phase 87 Stage 87D implemented, independently audited, and closed —
 Phase 87 overall is now `done`**, 2026-11-11, direct user request
 (commits `8cdb70c`, `fd51c00`, `8540aed`, `598a245`). Deliverable 1
@@ -1235,6 +1330,18 @@ amendments above.
 
 ## Known standing gaps (current-state facts, not phase history)
 
+- `L-140` (candidate, `planning/learnings/inbox.md`): `get_context_
+  packet`'s per-item `summary` field (`knowledge_api.py::
+  _summarize_record`) is silently hard-truncated at exactly 280
+  characters with no marker, while the packet's own `bounds.truncated`
+  flag (`_bound_context_items`) reports `false` in exactly this case —
+  it tracks only item/char *budget* exhaustion, never an individual
+  item's own summary having been cut. A real, live defect in a shipped,
+  agent-facing production path, found during Phase 89 Stage 89C's real
+  controlled-comparison trial; classification `invariant`; recommended
+  for near-term scheduling (a regression test in
+  `tests/test_knowledge_api.py` plus a fix) rather than the unscheduled
+  `ROADMAP.md` backlog — not yet fixed.
 - Cargo adapter (`decisions/0014`) never validated against real `cargo
   metadata` output or a real crate — no Rust toolchain available yet.
 - `extract_npm_symbols` untested against real-world `.d.ts` authoring
@@ -1309,6 +1416,28 @@ amendments above.
   named is tracked instead at `L-107`, above — not duplicated here.)
 
 ## Next concrete step
+
+**Phase 89 (Incremental Knowledge and Documentation Reconciliation)
+remains `in progress`, not `done`.** Stage 89C has run its full
+pre-registered trial and the result is in: Gates 1/2 met, Gate 3 (and
+Phase 89's own roadmap-level exit gate) **NOT MET** — a tie, no positive
+comparative advantage demonstrated. This is recorded as a real,
+credible negative finding, not reinterpreted or retried with a
+different task. **The next decision is a strategic choice for a
+future, separately authorised session**: whether to design a follow-up
+trial with a task more likely to expose a measurable effect (per the
+stage's own retro, one where the decisive fact is genuinely costly to
+re-derive from a short source read), or to treat this question as
+answered-for-now and move on to Phase 90 (Comparative Development
+Trials, not yet phase-planned). **Phase 90 has not been started or
+referenced as begun by this reconciliation.** A smaller, unscheduled
+near-term item: `L-140` (`get_context_packet`'s summary-truncation/
+`bounds.truncated` mismatch — see "Known standing gaps" above) is a
+real, reproducible defect recommended for prompt scheduling as a fix +
+regression test, independent of the Phase 89/90 strategic decision.
+
+**Older history below this point predates Phase 89 Stage 89C's close and
+is preserved only for continuity.**
 
 **Phase 83 is `done`** (see "Current phase"/"What was just completed"
 above) — its one remaining *outstanding, separately-gated* item

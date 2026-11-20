@@ -8,6 +8,135 @@ Statuses: `candidate` → `evidence-gathering` → `promoted` / `retained` /
 
 ---
 
+### L-140 — `get_context_packet`'s per-item `summary` truncation silently contradicts its own `bounds.truncated` flag
+
+- **origin:** Phase 89 Stage 89C, the real controlled-comparison trial's
+  independent `context-evaluator` dispatch
+  (`planning/reference-projects/ledgerkit/08-stage-89c-evaluation.md`),
+  independently re-confirmed by the same stage's `release-phase-auditor`
+  pass (`planning/reference-projects/ledgerkit/08-stage-89c-procedural-audit.md`)
+- **date:** 2026-11-21
+- **project_revision:** `b0b2ef8` (HEAD at the time this trial ran)
+- **observation:** every item's `summary` field in a real
+  `get_context_packet` call is silently hard-truncated at exactly 280
+  characters with no ellipsis or other marker, cutting off mid-word —
+  confirmed directly in both `control-packet.json` and
+  `treatment-packet.json` generated during this trial. The packet's own
+  `bounds.truncated` flag reports `false` in both packets despite this
+  per-item truncation having genuinely occurred — the flag evidently
+  tracks only whether the packet's own item/char *budget* was exhausted
+  (`max_items`/`max_chars`), not whether any individual item's own
+  `summary` was itself cut short. A caller relying on `bounds.truncated`
+  to decide whether to fetch a fuller record would wrongly conclude
+  nothing was truncated.
+- **evidence:** `src/codecompass/knowledge_api.py:565`
+  (`_summarize_record`: `return " ".join(value.split())[:280]` — a
+  silent, unconditional hard truncation with no marker) vs. lines
+  1799-1826 (`_bound_context_items`) and 1893/1902
+  (`get_context_packet`), where `ContextBounds.truncated` is computed
+  only from `max_items`/`max_chars` budget exhaustion across *items*,
+  never from any individual `candidate.summary` having itself been cut
+  by `_summarize_record`'s own 280-char slice; confirmed live in both
+  `control-packet.json` and `treatment-packet.json` from this trial
+  (items with `bounds.truncated: false` whose own `summary` field ends
+  mid-word at exactly 280 characters).
+- **classification:** invariant — this is a live correctness defect in
+  a shipped, agent-facing production path (`get_context_packet`'s own
+  MCP-exposed API), directly contradicting that function's own
+  documented contract ("`details.bounds.truncated` says so explicitly
+  rather than silently dropping ... the declared budget"), not a
+  design tradeoff or someday-maybe improvement — more than a
+  `future-improvement` classification warrants.
+- **status:** candidate
+- **disposition:** Outcome: promote, classification `invariant`
+  (upgraded from the originating report's own suggested "bug-fix
+  task" framing) — destination is a regression **test**
+  (`tests/test_knowledge_api.py`), finalized by the lead or an ad-hoc
+  implementer, *not* filed to the unscheduled `ROADMAP.md`
+  "Future-improvement backlog" table: the defect is already fully
+  reproduced and live in a real agent-facing call path, not merely a
+  someday-maybe idea, so it should be scheduled as a near-term fix
+  rather than parked indefinitely. Sketch: a test that calls
+  `get_context_packet` with a subject whose `summary`-source field
+  exceeds 280 characters, asserts the returned item's `summary` is
+  truncated, and asserts `bounds.truncated` (or a new per-item
+  indicator) reflects that truncation — currently it would assert
+  `bounds.truncated is True` and fail against today's code, which
+  always reports `False` in this case unless the overall item/char
+  budget was also exhausted. Fix options for the implementer to choose
+  between (not decided here): (a) make `bounds.truncated` additionally
+  true whenever any item's own summary was cut, or (b) add a separate
+  per-item `summary_truncated` flag and leave `bounds.truncated`
+  scoped to the budget as today, documenting the distinction clearly
+  either way. Remains `status: candidate` (not `promoted`) until that
+  test + fix actually land — `promoted.md` gets its pointer line then,
+  per `learning-lifecycle.md` §6.
+  lead: no mechanical check to run for this triage step itself; the
+  regression test named above is what the implementer runs.
+
+### L-139 — a redaction/allocation-blinding sweep must grep for the exact longer string a plan names, not assume a shorter related string's absence implies the longer one's absence too
+
+- **origin:** Phase 89 Stage 89C, the real controlled-comparison
+  trial's blinded-materials preparation step, caught by the independent
+  `context-evaluator` dispatch and independently re-confirmed by the
+  `release-phase-auditor` dispatch
+  (`planning/reference-projects/ledgerkit/08-stage-89c-procedural-audit.md`)
+- **date:** 2026-11-21
+- **project_revision:** `b0b2ef8` (HEAD at the time this trial ran)
+- **observation:** the blinded-materials preparation step's own
+  redaction sweep grepped for the literal strings `ledgerkit-control`/
+  `ledgerkit-treatment` (per plan §8 item 6's stage-one list) and
+  redacted every hit it found in structured files (`oracle-result.json`
+  etc.), but the same sweep never separately grepped for the longer,
+  related strings `ledgerkit-verify-control`/`ledgerkit-verify-treatment`
+  — which are *not* substrings containing the shorter pair in a way a
+  single pattern would catch (the longer string contains the shorter
+  one as a substring, so a sweep for the shorter one *should* have
+  matched both, but the actual implementation only replaced the longer
+  literal path components it had explicitly enumerated, missing the
+  verify-clone variant inside raw, unstructured `.txt` oracle-subprocess
+  transcripts specifically — the gap was in which files were scanned/
+  replaced, not in the search pattern's own string-matching semantics).
+  This leaked the real allocation into both drafts' own raw oracle
+  transcripts, caught only by two independent downstream readers (the
+  evaluator, then the auditor), never by the redaction step's own
+  self-check.
+- **evidence:**
+  `planning/reference-projects/ledgerkit/08-stage-89c-procedural-audit.md`
+  (the `release-phase-auditor`'s independent re-confirmation of the
+  `context-evaluator`'s finding) — the raw `.txt` oracle-subprocess
+  transcript files retained the literal, unredacted
+  `ledgerkit-verify-control`/`ledgerkit-verify-treatment` path
+  components after the stage-one redaction sweep had already run
+  against them, while every hit of the shorter
+  `ledgerkit-control`/`ledgerkit-treatment` pair in structured files
+  (`oracle-result.json` etc.) was correctly redacted.
+- **classification:** future-improvement — a procedural checklist gap
+  specific to a future blinded controlled-comparison trial's own
+  materials-preparation step (Stage 89C's own protocol), not yet
+  actionable because no further such trial is currently scheduled;
+  not a project-wide `CLAUDE.md`-level rule (scope is this specific
+  trial-protocol family) and not a code invariant (the gap is in a
+  one-off manual/procedural sweep, not in shipped `src/` behavior).
+- **status:** promoted
+- **disposition:** Outcome: promote, classification `future-improvement`
+  → `planning/ROADMAP.md` "Future-improvement backlog" table (row
+  added in this triage pass, pointer logged in `promoted.md`).
+  Explicitly not minimized by this trial's own immateriality (the
+  result was a tie regardless of the leaked allocation) — the checklist
+  gap itself is real and generalizable to any future trial of this
+  design, including ones where a leaked allocation would be material
+  to a non-tied, asymmetric result. Recommended checklist addition (for
+  whoever plans the next such trial): a blinded-materials redaction
+  sweep must explicitly enumerate every file type/location a
+  known-sensitive string could appear in — structured JSON, prose
+  reports, *and* raw subprocess/tool-output transcripts — and verify,
+  item by item, its own coverage against the plan's full stage-one
+  string list, rather than assuming coverage from a partial sweep over
+  only the structured files.
+
+---
+
 ### L-131 — a relative-path convention enforced only by "how this is always invoked" (cwd == project_root) is not actually enforced; wrapping a new, differently-invoked entry point around existing logic is exactly when it gets silently violated for the first time
 
 - **origin:** Phase 88 (Agent Integration and MCP), Stage 88B

@@ -445,6 +445,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   _review-phase89-stage89c-plan.md`. This same dispatch's own explicit
   authorisation then carried the plan through actual Stage 89C
   implementation, evaluation, and audit — see the entry below.
+- **Phase 89 Stage 89C — Task B controlled comparison executed,
+  independently verified, and independently audited (2026-11-21,
+  commits through `b0b2ef8`)**: two isolated development arms
+  implemented `ReportSpec.with_combined_section` on pinned Ledgerkit
+  commit `a7740fd04fe1814d2a557bfcb67a9a775a4a22f9` (confirmed, by three
+  independent checks, never substituted) against CodeCompass commit
+  `b0b2ef8`. Both arms produced a buildable, runnable implementation
+  confirmed by direct independent re-inspection; both independently
+  verified 11/11 on the pinned acceptance suite, with a genuine
+  `OracleResult` **PASS** for each arm's primary scope
+  (`overlapping-account-patterns-no-double-count`); full Ledgerkit
+  regression suite unregressed for either arm (957/958 passed, 0
+  failed). An independent `context-evaluator` dispatch rated both
+  drafts identically — **PASS WITH GAPS** / context-advantage **LOW**
+  for both — and found the proximate cause: both engineers
+  independently re-derived the correct design answer from a short,
+  direct read of `balance_from_spec`'s own source, aided by the task's
+  own pinned framing sentence, regardless of which context packet
+  either received (per `L-027`'s equal-raw-access check). An
+  independent `release-phase-auditor` dispatch returned **PASS WITH
+  NON-BLOCKING OBSERVATIONS**: every mechanical claim in the result
+  report was independently re-derived from raw artifacts, finding one
+  genuine, honestly-disclosed procedural-fidelity gap — the blinded-
+  materials redaction sweep correctly redacted the literal
+  `ledgerkit-control`/`ledgerkit-treatment` strings in structured
+  files but missed the related, longer `ledgerkit-verify-control`/
+  `ledgerkit-verify-treatment` strings inside raw, unstructured
+  oracle-subprocess `.txt` transcripts, leaking the real allocation
+  into both drafts' own raw transcripts — caught by the evaluator and
+  independently re-confirmed by the auditor, assessed immaterial to
+  this run's own result (filed `L-139`). **The pre-registered positive
+  success criterion (the plan's own §7/§14 Gate 3) was NOT met**: all
+  three named signals (acceptance-test divergence, evaluator verdict,
+  evaluator rating) came out tied. Per the plan's own explicit
+  tie-handling rule, this is reported plainly as a credible negative
+  finding, not an ambiguous or partial result, and not reinterpreted or
+  retried with a different task. **Phase 89's own roadmap-level
+  positive exit gate is correspondingly NOT MET; Phase 89 remains `in
+  progress`, not `done`.** A second candidate learning, `L-140`
+  (`get_context_packet`'s per-item `summary` truncation silently
+  contradicting its own `bounds.truncated` flag — `src/codecompass/
+  knowledge_api.py`), was found by the evaluator and independently
+  re-confirmed by the auditor during this trial; triaged
+  classification `invariant`, left `status: candidate` pending its own
+  fix and regression test, recommended for near-term scheduling rather
+  than the unscheduled backlog — not fixed under this stage's own
+  authorised scope. Full result: `planning/reference-projects/
+  ledgerkit/08-stage-89c-task-b-controlled-comparison.md` and its
+  sibling `08-stage-89c-*.md` files; the pre-registration's own
+  appended §10 (`planning/retros/
+  phase-89-ledgerkit-two-task-demonstration.md`); the stage's own retro
+  (`planning/retros/phase-89-stage-89c.md`).
 - **Phase 89 — third planning amendment (Task A mechanism, Evidence
   identity, exit-gate semantics, baseline freshness) — still planning
   only**: a fresh, independent-orchestrator re-verification found the
