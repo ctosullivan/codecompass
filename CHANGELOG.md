@@ -410,6 +410,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   plan review of the amended plan is tracked in `planning/retros/
   _review-phase89-stage89c-plan.md`'s newest dated section. Stage 89C
   itself remains unimplemented and unauthorised by this work.
+- **Phase 89 Stage 89C — third planning amendment (overbroad blinding
+  check; silent-re-pin risk) — still planning only**: a third dispatch
+  ("CodeCompass Orchestrator — Final Stage 89C Corrections,
+  Verification and Implementation") found two further, narrower
+  corrections needed before authorising implementation. **(1)** §8's
+  blinding-violation check required a case-insensitive grep for the
+  bare words "control"/"treatment" anywhere in evaluator-visible
+  material, treating any hit as an automatic violation — overbroad,
+  since ordinary Ledgerkit source/test/doc prose uses these words in
+  their ordinary English sense (e.g. "controls sign presentation")
+  with no connection to experimental allocation. Fixed to a two-stage
+  check: a narrow, automatic stage one for known allocation-bearing
+  identifiers/paths (clone names, packet/report filenames, the
+  allocation key), and a contextual stage two for the bare words, where
+  a hit is excluded only if contextually confirmed as ordinary,
+  unconnected terminology — a genuine leak found by stage two remains
+  exactly as blocking as a stage-one hit. **(2)** §1 instructed a future
+  implementer to re-verify the real Ledgerkit checkout's `HEAD` and
+  silently re-pin to it if it had advanced, risking an unintended change
+  to the experimental baseline, test fixtures, and the relevance of the
+  existing Task A Evidence. Fixed: the pinned SHA
+  (`a7740fd04fe1814d2a557bfcb67a9a775a4a22f9`) is now a fixed baseline
+  that is never silently substituted; the real checkout's current
+  `HEAD` is recorded separately for transparency only, and if the
+  pinned commit is genuinely unavailable the correct response is to
+  stop and treat it as a blocker requiring a separate governance
+  decision, never a silent substitution. A focused independent review
+  confirmed both corrections sound (one non-blocking observation: stage
+  one's fixed identifier list omits the per-arm boundary-check report
+  filenames, which is immaterial since those reports are never shown to
+  the evaluator) — final verdict **READY WITH NON-BLOCKING
+  OBSERVATIONS**, appended to `planning/retros/
+  _review-phase89-stage89c-plan.md`. This same dispatch's own explicit
+  authorisation then carried the plan through actual Stage 89C
+  implementation, evaluation, and audit — see the entry below.
 - **Phase 89 — third planning amendment (Task A mechanism, Evidence
   identity, exit-gate semantics, baseline freshness) — still planning
   only**: a fresh, independent-orchestrator re-verification found the

@@ -777,3 +777,142 @@ review's own already-confirmed "READY WITH NON-BLOCKING OBSERVATIONS"
 re-check (above), this plan remains **READY WITH NON-BLOCKING
 OBSERVATIONS** — no outstanding blocking finding against the plan as it
 now stands in the working tree.
+
+---
+
+## 2026-11-20 — Focused independent review of the THIRD amendment
+(two-stage blinding-violation check in §8 item 6; Ledgerkit SHA-pinning
+correction in §1/§4.2 step 1/§11)
+
+Dispatched narrowly, per instruction, to review only these two
+corrections — not to re-litigate anything the two prior review passes
+above already settled. Read-only toward the real `~/projects/ledgerkit`
+checkout and this project's real canonical knowledge throughout.
+
+### VERDICT: READY WITH NON-BLOCKING OBSERVATIONS
+
+Both corrections are genuinely sound, correctly worded, and consistent
+with the rest of the plan. One minor, non-blocking observation on
+stage-one's fixed list (below); no blocking defect found.
+
+### Correction 1 — two-stage blinding-violation check (§8 item 6)
+
+Re-read the exact committed text of item 6 directly (not the amendment's
+own narration of it). Confirmed:
+
+- **Stage one's fixed list** — `ledgerkit-control`/`ledgerkit-treatment`
+  clone names/scratch paths; `control-packet.json`/`treatment-
+  packet.json`; `control-report.md`/`treatment-report.md`;
+  `ledgerkit-verify-control`/`ledgerkit-verify-treatment`; the
+  allocation-key file; any sentence identifying which draft got which
+  snapshot; plus a catch-all for "any other string that names or
+  implies the assigned experimental arm specifically." Cross-checked
+  against every control/treatment-specific filename or clone name
+  actually named elsewhere in the plan (§4.1's tool-access row, §4.2.2's
+  fork step, §5.2/§5.3's `$LK_REF`/packet-generation vars — these are
+  generic, not control/treatment-labelled, so correctly out of scope —
+  §7.2/§7.3/§7.5's dispatch/report paths, §8.1's verify-clone names,
+  §9/§11's table rows): every control/treatment-labelled artifact name
+  I found is on the list, **except** the per-arm boundary-check report
+  filenames (`<NN>-stage-89c-control-boundary-check.md`/
+  `<NN>-stage-89c-treatment-boundary-check.md`, §7.7/§11). This is not a
+  blocking gap: item 6's own stated scope is auditing "every
+  evaluator-visible artifact and instruction" specifically, and the
+  boundary-check reports are consumed by the `release-phase-auditor`
+  itself (the same dispatch doing this check), never handed to the
+  `context-evaluator` (§8.4's evaluator instructions never reference
+  them) — so they are outside this check's own declared scope, not a
+  missed allocation-bearing path within it. Worth a one-line
+  clarification if this plan is amended again, but not worth blocking
+  on, and the catch-all clause would flag it anyway if it ever were
+  shown to the evaluator.
+- **Stage two's wording cannot be read as license to wave away a real
+  leak.** The exact text: "A hit **is** a genuine violation, exactly as
+  serious as a stage-one hit, when read in context it discloses or
+  implies which draft is control versus treatment — stage two exists to
+  catch a disclosure stage one's own fixed string list did not
+  anticipate, not to relax the standard once a hit looks suspicious.
+  **Narrowing the automatic check in stage one must never excuse a
+  genuine leak found in stage two**." This is unambiguous in the
+  direction the dispatch was worried about — the contextual-judgment
+  language is scoped to excluding *harmless* hits, never to excusing a
+  confirmed one.
+- **Nothing else in §8 is weakened.** The final bullet of item 6
+  explicitly preserves, unchanged: neutral `draft-1`/`draft-2` naming,
+  random per-run allocation, the allocation key held separate from
+  evaluator-visible material, and item 3's own residual-limitation
+  disclosure (Evidence content, e.g. `EV-BALANCEFROMS-004`, may still
+  reveal which snapshot is more recent — explicitly not itself a
+  blinding violation). Re-read items 2-5 directly: all unchanged from
+  the prior review's own already-confirmed text.
+
+### Correction 2 — Ledgerkit SHA pinning (§1, §4.2 step 1, §11 "Pin check")
+
+Re-read the exact text in all three locations. The "never silently
+substitute" instruction is unambiguous in each: §1 states it four
+separate ways (fixed baseline language, the five-step verify/record/
+pin/never-substitute/stop-as-blocker sequence, and the parenthetical
+confirming no drift as of the amendment session); §4.2 step 1 repeats
+the same sequence inline at the point it's actually executed; §11's
+"Pin check" row states "confirm the pinned SHA is checkoutable;
+separately ... record real `HEAD` for transparency only — never re-pin
+to it." All three say the same thing and none leaves room for a future
+implementer to read "re-pin" as acceptable.
+
+**Commands verified to actually work**, run independently against the
+real checkout:
+
+```
+$ git -C ~/projects/ledgerkit cat-file -e a7740fd04fe1814d2a557bfcb67a9a775a4a22f9^{commit}
+(exit code 0 — commit exists and is checkoutable)
+$ git -C ~/projects/ledgerkit rev-parse HEAD
+a7740fd04fe1814d2a557bfcb67a9a775a4a22f9
+```
+
+**Grep for stale re-pinning language**: searched the whole file for
+`re-pin`, `HEAD`, `advanced` (22 hits total). Every hit is consistent
+with the corrected convention — either explaining the old (now-fixed)
+bug's own narration ("an earlier draft... instructed a future
+implementer to silently re-pin..."), restating the fixed-baseline rule,
+or the governance-decision escape hatch ("re-pinning to a different
+commit is a separately justified governance decision... never a silent
+substitution"). No leftover instruction anywhere tells a future
+implementer that advancing to a newer real `HEAD` is an acceptable
+default.
+
+**Real checkout state, independently confirmed right now**: `git -C
+~/projects/ledgerkit rev-parse HEAD` → `a7740fd04fe1814d2a557bfcb67a9a775a4a22f9`
+(exact match to the pinned SHA); `git -C ~/projects/ledgerkit status
+--short` → empty (clean). No drift has occurred; this is not currently a
+blocking fact.
+
+**Sanity-check of assumed Ledgerkit content at the pinned commit** (not
+a full re-derivation — the prior two reviews already did that):
+`planning/contracts/balance-from-spec/oracle-contract.yaml` has exactly
+three `required: true` checks (`single-section-expense-subtotal`,
+`multi-section-income-expense-subtotal`,
+`overlapping-account-patterns-no-double-count`), all three sharing
+`test_input_paths: [tests/test_reports.py, tests/fixtures/
+filtered.journal]` — matches the plan's digest-compatibility claim
+exactly. `ledgerkit/models.py`'s `ReportSection`/`ReportSpec` remain
+frozen dataclasses with no `@classmethod`/`@staticmethod` and no
+`combined_section`/`with_combined` reference anywhere. `tests/
+test_reports.py` has no `test_section_accounts_overlapping_patterns_
+no_double_count` method defined (only cited by the contract's
+`check_reference`, consistent with "Task A's test has never been added
+to the real checkout"). `tests/fixtures/filtered.journal` confirms
+groceries £150.00, coffee £9.00, housing/rent £1,200.00, two £3,000.00
+salary postings (£6,000.00 income) — matches every fixture amount the
+plan's §6 acceptance test and its worked arithmetic (159.00, 1350.00,
+1359.00, 6000.00) depend on. Nothing has drifted since the prior two
+reviews.
+
+### Conclusion
+
+Both corrections are real fixes, correctly and unambiguously worded,
+and consistent with the rest of the plan. The real Ledgerkit checkout's
+current `HEAD` matches the pinned SHA exactly as of this review, so
+there is no blocking fact outside the plan text either. **Verdict: READY
+WITH NON-BLOCKING OBSERVATIONS** (the boundary-check-filename omission
+from stage one's fixed list, noted above, is the only observation, and
+it is non-blocking).

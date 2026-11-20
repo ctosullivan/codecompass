@@ -17,12 +17,25 @@ gap (§5.4) and an acceptance-test completeness gap (§6). All five are
 fixed below, each independently reproduced against real disposable
 scratch state before being written up — see `planning/retros/
 _review-phase89-stage89c-plan.md`'s newest dated section for the fresh
-independent reviewer's own verdict. **Not authorised by either
-dispatch**: Stage 89C implementation, execution of Task B, running the
-controlled comparison, modifying its pre-registered success criteria,
-or marking Phase 89 complete. This plan is the **planning deliverable**
-both dispatches required; it contains exact, executable procedures for
-a *future*, separately authorised implementer, not work performed now.
+independent reviewer's own verdict. A **third** dispatch, "CodeCompass
+Orchestrator — Final Stage 89C Corrections, Verification and
+Implementation," then found two further, narrower corrections: an
+overbroad blinding-violation check in §8 (a case-insensitive
+`control`/`treatment` grep that would falsely flag ordinary Ledgerkit
+terminology, e.g. "controls sign presentation" — now a two-stage
+check distinguishing genuine allocation-bearing identifiers from
+harmless English usage) and §1's own Ledgerkit-SHA language (which
+suggested silently re-pinning to a newer real-repository `HEAD` if one
+had advanced — now a fixed baseline that is never silently substituted,
+with real-`HEAD` drift recorded for transparency only). Both are fixed
+below and were independently re-reviewed before this plan was treated
+as implementation-ready; that same third dispatch's own explicit
+authorisation then carried this plan through actual implementation,
+evaluation, and audit — see §15 for the executed trial's own record.
+This plan file's own §§1-14 remain the **planning deliverable** all
+three dispatches built on; a future re-execution, if ever separately
+authorised, should treat §§1-14 as the pinned procedure and §15 as a
+completed, historical run, not a template to overwrite.
 
 ## 1. Source-verified starting state and prerequisites
 
@@ -33,14 +46,42 @@ assumed from the pre-registration's own prose.
   review (Phase 89 Stage 89C planning, committed and pushed), re-verified
   again this amendment session (which adds its own further commits on
   top) — clean working tree throughout, in sync with `origin/main`.
-- **Ledgerkit**: `~/projects/ledgerkit`, clean, `HEAD`
-  `a7740fd04fe1814d2a557bfcb67a9a775a4a22f9` — the same pinned revision
-  every Phase 89 demonstration to date has used, re-verified again this
-  amendment session. Re-verify this has not advanced immediately before
-  Stage 89C dispatch (the reference-project protocol's own "always
-  recorded, never latest" rule, `planning/v1-redefinition/
-  reference-project-protocol.md` §2.1); if it has, re-pin and record the
-  new SHA before anything else in this plan runs.
+- **Ledgerkit**: `~/projects/ledgerkit` — pinned baseline commit
+  `a7740fd04fe1814d2a557bfcb67a9a775a4a22f9`, the same fixed revision
+  every Phase 89 demonstration to date has used. **Corrected, third
+  independent dispatch ("CodeCompass Orchestrator — Final Stage 89C
+  Corrections, Verification and Implementation"): an earlier draft of
+  this bullet instructed a future implementer to silently re-pin to
+  the real checkout's current `HEAD` if it had advanced since this
+  plan was written — this could unintentionally change the
+  experimental baseline, the test fixtures the pinned acceptance test
+  (§6) and Task A's own already-demonstrated reconciliation (§5.2)
+  both depend on, and the relevance of the existing Task A Evidence,
+  none of which this plan is authorised to alter.** This pinned SHA is
+  the fixed experimental baseline for this entire plan, never a
+  default that advances with the real repository. Before Stage 89C
+  dispatch: (1) verify the pinned commit still exists and can be
+  checked out in the real `~/projects/ledgerkit` checkout (`git -C
+  ~/projects/ledgerkit cat-file -e
+  a7740fd04fe1814d2a557bfcb67a9a775a4a22f9^{commit}`); (2) separately
+  record the real checkout's own current `HEAD` (`git -C
+  ~/projects/ledgerkit rev-parse HEAD`) for transparency, whether or
+  not it has advanced beyond the pinned commit — this is a disclosure,
+  never a substitution; (3) every seed/reference/development-arm clone
+  in §4-§6 is checked out to the pinned SHA specifically, regardless of
+  what the real checkout's own `HEAD` currently reads; (4) **never**
+  silently substitute the real checkout's current `HEAD`, or any other
+  commit, for the pinned SHA at any step of this procedure; (5) if the
+  pinned revision is genuinely unavailable or unusable in the real
+  checkout (e.g. the commit has been garbage-collected or the local
+  clone no longer contains it), **stop and document this as a
+  blocker** — re-pinning to a different commit is a separately
+  justified governance decision (a new dated amendment to this plan,
+  following this project's own amendment convention), never a silent
+  substitution made mid-procedure. (As of this dispatch's own
+  verification, the real checkout's `HEAD` still equals the pinned
+  SHA exactly — no drift has occurred — but the procedure above holds
+  regardless of whether that remains true at execution time.)
 - **Task B has not been implemented anywhere.** Confirmed directly:
   `ledgerkit/models.py`'s `ReportSpec`/`ReportSection` are frozen
   dataclasses with no classmethod/staticmethod of any kind today
@@ -410,9 +451,17 @@ providing any CodeCompass context at all.*
 ### 4.2 Isolation (reusing the established Ledgerkit-trial pattern verbatim, `planning/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md` §5.2)
 
 1. One seed clone: `git clone /home/cormac/projects/ledgerkit <scratch>/
-   ledgerkit-seed`, checked out to `a7740fd04fe1814d2a557bfcb67a9a775a4a22f9`
-   (re-verify this still matches `~/projects/ledgerkit`'s own live
-   `HEAD` immediately before this step).
+   ledgerkit-seed`, checked out to the fixed pinned SHA
+   `a7740fd04fe1814d2a557bfcb67a9a775a4a22f9` **regardless of whatever
+   the real `~/projects/ledgerkit` checkout's own current `HEAD` reads**
+   (§1's own correction, third dispatch — this SHA is the fixed
+   experimental baseline, never silently re-pinned to a newer `HEAD`).
+   Confirm the pinned commit exists and can be checked out before
+   cloning (`git -C ~/projects/ledgerkit cat-file -e
+   a7740fd04fe1814d2a557bfcb67a9a775a4a22f9^{commit}`); separately
+   record the real checkout's own current `HEAD` for transparency. If
+   the pinned commit is genuinely unavailable, stop per §1's own
+   blocker path — do not substitute a different commit here.
 2. Forked, before either is touched further: `cp -r <scratch>/
    ledgerkit-seed <scratch>/ledgerkit-control` and `cp -r <scratch>/
    ledgerkit-seed <scratch>/ledgerkit-treatment`.
@@ -1136,13 +1185,57 @@ step 1-2 above.
    distinct from the evaluator's own content judgment. This same
    dispatch additionally **audits every evaluator-visible artifact and
    instruction for accidental allocation disclosure** (dispatch's own
-   explicit requirement, item 7 above): greps the neutral `draft-1`/
-   `draft-2` material and the evaluator's own dispatch prompt for the
-   literal strings `control`/`treatment` (case-insensitive) and for any
-   file path, clone name, or filename that leaked unredacted from §4.2's
-   own internal naming — any hit is reported as a blinding-violation
-   finding, not silently excluded, and voids that run's own blinding
-   claim (§10's own failure-handling path).
+   explicit requirement, item 7 above), via a **two-stage check**
+   (corrected, third independent dispatch, "CodeCompass Orchestrator —
+   Final Stage 89C Corrections, Verification and Implementation": an
+   earlier draft of this item treated any case-insensitive occurrence
+   of the bare words `control`/`treatment` anywhere in evaluator-
+   visible material as an automatic blinding violation — overbroad,
+   since ordinary Ledgerkit source/tests/documentation use these words
+   in their ordinary English sense (e.g. prose describing what a field
+   "controls," or an `invert` flag described as "controlling sign
+   presentation"), none of which discloses experimental allocation; a
+   grep this broad would falsely invalidate an otherwise-valid run on a
+   purely cosmetic word collision):
+
+   - **Stage one — narrow, automatic check for genuine
+     allocation-bearing identifiers and paths.** Any occurrence of any
+     of the following in evaluator-visible material is an automatic
+     blinding-violation finding, no contextual judgment required: the
+     literal clone names `ledgerkit-control`/`ledgerkit-treatment` or
+     their scratch paths; the literal filenames
+     `control-packet.json`/`treatment-packet.json`,
+     `control-report.md`/`treatment-report.md`, or
+     `ledgerkit-verify-control`/`ledgerkit-verify-treatment`; the
+     allocation-key file or any of its own contents; any sentence in
+     an agent instruction or report identifying which draft received
+     pre- versus post-reconciliation knowledge; and any other string
+     that names or implies the assigned experimental arm specifically.
+   - **Stage two — contextual inspection of generic word occurrences.**
+     Separately, grep the same material case-insensitively for the
+     bare words `control`/`controls`/`controlling`/`treatment` (a
+     broader, informational pass) and read each hit in context. A hit
+     is **harmless** — not a violation — when it is ordinary Ledgerkit
+     source/test/documentation terminology unconnected to this
+     experiment's allocation. A hit **is** a genuine violation, exactly
+     as serious as a stage-one hit, when read in context it discloses
+     or implies which draft is control versus treatment — stage two
+     exists to catch a disclosure stage one's own fixed string list did
+     not anticipate, not to relax the standard once a hit looks
+     suspicious. **Narrowing the automatic check in stage one must
+     never excuse a genuine leak found in stage two** — a hit stage
+     two's own contextual read confirms as a real disclosure is
+     reported as a blinding-violation finding and voids that run's own
+     blinding claim exactly as a stage-one hit does (§10's own
+     failure-handling path); only a hit contextually confirmed as
+     ordinary, unconnected terminology is excluded from that verdict.
+   - Preserve everything else already established in this item
+     unchanged: neutral `draft-1`/`draft-2` artifact naming, random
+     allocation per run, the allocation key held separately from
+     evaluator-visible material, and item 3 above's own documented
+     residual limitation that substantive Evidence content may reveal
+     which packet is more recently reconciled (never itself a blinding
+     violation — that limitation is already disclosed, not hidden).
 
 ## 9. Metrics and result-reporting schema
 
@@ -1276,7 +1369,7 @@ checklist:
 
 | Step | Command/action | Artifact |
 |---|---|---|
-| Pin check | `git -C ~/projects/ledgerkit rev-parse HEAD` | confirm `a7740fd0...` |
+| Pin check | `git -C ~/projects/ledgerkit cat-file -e a7740fd0...^{commit}` (confirm the pinned SHA is checkoutable); separately `git -C ~/projects/ledgerkit rev-parse HEAD` (record real `HEAD` for transparency only — never re-pin to it, §1) | fixture-equivalence report records both the confirmed-checkoutable pinned SHA and the real checkout's own current `HEAD` |
 | Seed + fork | `git clone`, `cp -r` ×2 | `<scratch>/ledgerkit-{seed,control,treatment}` |
 | Equivalence check | `diff -rq`, `git rev-parse HEAD` in both | `planning/reference-projects/ledgerkit/<NN>-stage-89c-fixture-equivalence.md` |
 | Pre-reconciliation snapshot | `cp -r planning/knowledge/balance-from-spec`, `cp -r planning/contracts/balance-from-spec` | `<scratch>/knowledge-pre{,-contracts}` |
