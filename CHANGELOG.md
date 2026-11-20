@@ -362,6 +362,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   confirmed all three fixes and found no new issues — final verdict
   **READY WITH NON-BLOCKING OBSERVATIONS**. Stage 89C itself remains
   unimplemented and unauthorised by this work.
+- **Phase 89 Stage 89C — second planning amendment (control-arm packet
+  omission; reference-checkout digest incompatibility; incorrect
+  `OracleResult` API) — still planning only**: a second, independent
+  re-derivation against live CodeCompass and Ledgerkit source found
+  three further defects the first review's own scope had not covered,
+  all three this time genuinely blocking or validity-relevant, not
+  cosmetic. **(1)** An earlier draft's §4/§7/§8 gave the treatment arm
+  its own post-reconciliation context packet but gave the control arm
+  none at all — measuring the effect of supplying any CodeCompass
+  context, not the incremental effect of the reconciled Evidence the
+  pre-registration actually specifies. Fixed: both arms now receive
+  their own respective packet, via identical delivery method and the
+  identical one-sentence symmetric framing; neither is told which is
+  "control"/"treatment." **(2)** The packet-generation reference
+  checkout was a separate, pristine Ledgerkit clone, pinned at the same
+  commit but without the Task A test ever added, while the real
+  `balance-from-spec` `oracle-contract.yaml`'s three required checks
+  all share identical `test_input_paths` — `oracle.compute_tree_digest`
+  hashes the whole named file, so the newly-created Evidence's own
+  `OracleResult` would recompute a mismatched `test_input_digest`
+  against that pristine checkout and evaluate `INVALID`, not `PASS`,
+  silently keeping the post-Task-A packet's required-scope-gap count at
+  the same `3` as the pre-Task-A packet and defeating the experiment's
+  own central signal with no error anywhere. Confirmed by direct, live
+  reproduction both ways this session (the bug reproduced exactly as
+  described against a pristine reference checkout; the fix — one
+  single, shared, test-containing reference checkout used for both
+  packet-generation calls — confirmed to correctly produce the `3`→`2`
+  count change). **(3)** §6's acceptance-test verification sequence
+  described `oracle.run_pytest_check` itself as producing a durable,
+  provenance-tracked `OracleResult`; its real signature is `(repo_root,
+  check_reference, ...) -> tuple[str, str | None, str]` with no
+  contract/digest/provenance fields and no persistence at all. Fixed to
+  use the real Phase 82 API (`evaluate_check` → `write_oracle_result` →
+  `parse_oracle_result` → `evaluate_result_precedence`), confirmed
+  end-to-end against a real disposable verification clone this session.
+  Also fixed: a non-blocking packet-equivalence-allowlist gap
+  (`consistency.knowledge_revision` also legitimately, mechanically
+  differs between the two packets, caused directly by the Claim's own
+  file content changing — now named explicitly in a full, four-category
+  allowlist) and an acceptance-test completeness gap (three new test
+  methods — exclude-pattern union, conflicting-depth rejection, label
+  override/default handling — each independently confirmed to pass
+  against a correct reference implementation and, for the exclude-union
+  test, to fail against a plausible incorrect one). A fresh independent
+  plan review of the amended plan is tracked in `planning/retros/
+  _review-phase89-stage89c-plan.md`'s newest dated section. Stage 89C
+  itself remains unimplemented and unauthorised by this work.
 - **Phase 89 — third planning amendment (Task A mechanism, Evidence
   identity, exit-gate semantics, baseline freshness) — still planning
   only**: a fresh, independent-orchestrator re-verification found the

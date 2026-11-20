@@ -2,30 +2,45 @@
 
 ## 0. Status
 
-Planning only. Written under the governing dispatch "CodeCompass
-Orchestrator — Final Stage 89B Verification and Stage 89C Planning."
-**Not authorised by that dispatch**: Stage 89C implementation, execution
-of Task B, running the controlled comparison, modifying its
-pre-registered success criteria, or marking Phase 89 complete. This
-plan is the **planning deliverable** that dispatch required; it
-contains exact, executable procedures for a *future*, separately
-authorised implementer, not work performed now.
+Planning only. Originally written under the governing dispatch
+"CodeCompass Orchestrator — Final Stage 89B Verification and Stage 89C
+Planning," then amended under a second dispatch, "CodeCompass
+Orchestrator — Phase 89C Plan Corrections and Independent Re-Review,"
+which independently re-derived this plan against live CodeCompass and
+Ledgerkit source and found three genuine, blocking or validity-relevant
+defects the first independent review's own scope had not covered
+(control-arm packet omission, §4/§7/§8; a reference-checkout digest
+incompatibility that would have silently suppressed the very signal
+this experiment depends on, §5.2/§5.3; an incorrect `OracleResult`
+creation API in §6) plus one non-blocking packet-equivalence-allowlist
+gap (§5.4) and an acceptance-test completeness gap (§6). All five are
+fixed below, each independently reproduced against real disposable
+scratch state before being written up — see `planning/retros/
+_review-phase89-stage89c-plan.md`'s newest dated section for the fresh
+independent reviewer's own verdict. **Not authorised by either
+dispatch**: Stage 89C implementation, execution of Task B, running the
+controlled comparison, modifying its pre-registered success criteria,
+or marking Phase 89 complete. This plan is the **planning deliverable**
+both dispatches required; it contains exact, executable procedures for
+a *future*, separately authorised implementer, not work performed now.
 
 ## 1. Source-verified starting state and prerequisites
 
 Verified live, this session, against the actual repository — not
 assumed from the pre-registration's own prose.
 
-- **CodeCompass**: `HEAD` `88b6e30` (Phase 89 Stage 89B, committed and
-  pushed), clean working tree, in sync with `origin/main`.
+- **CodeCompass**: `HEAD` `d1aee46` as of the first independent plan
+  review (Phase 89 Stage 89C planning, committed and pushed), re-verified
+  again this amendment session (which adds its own further commits on
+  top) — clean working tree throughout, in sync with `origin/main`.
 - **Ledgerkit**: `~/projects/ledgerkit`, clean, `HEAD`
   `a7740fd04fe1814d2a557bfcb67a9a775a4a22f9` — the same pinned revision
-  every Phase 89 demonstration to date has used. Re-verify this has not
-  advanced immediately before Stage 89C dispatch (the reference-project
-  protocol's own "always recorded, never latest" rule,
-  `planning/v1-redefinition/reference-project-protocol.md` §2.1); if it
-  has, re-pin and record the new SHA before anything else in this plan
-  runs.
+  every Phase 89 demonstration to date has used, re-verified again this
+  amendment session. Re-verify this has not advanced immediately before
+  Stage 89C dispatch (the reference-project protocol's own "always
+  recorded, never latest" rule, `planning/v1-redefinition/
+  reference-project-protocol.md` §2.1); if it has, re-pin and record the
+  new SHA before anything else in this plan runs.
 - **Task B has not been implemented anywhere.** Confirmed directly:
   `ledgerkit/models.py`'s `ReportSpec`/`ReportSection` are frozen
   dataclasses with no classmethod/staticmethod of any kind today
@@ -128,6 +143,60 @@ assumed from the pre-registration's own prose.
   without it, and is visible only in `reasons`' own count either way.
   This is stated as a hard requirement
   below, not a nice-to-have.
+  **A further field genuinely, mechanically differs and was missing from
+  every earlier draft's own enumeration — found by the second
+  independent dispatch ("Phase 89C Plan Corrections and Independent
+  Re-Review") and confirmed here by this amendment's own direct, live
+  reproduction (§5.4 below carries the full, source-verified allowlist)**:
+  `CL-BFS-004`'s own `consistency.knowledge_revision` (a SHA-256 of the
+  Claim's own YAML file content, computed fresh on every call,
+  `knowledge_api._knowledge_consistency`'s own first line) necessarily
+  differs between the two packets too, since `apply_manifest` genuinely
+  rewrites `CL-BFS-004.yaml`'s own `evidence_support_state`/
+  `supporting_evidence` fields as part of reconciliation — this is
+  **derived metadata directly caused by the treatment itself**, not a
+  separate, unexplained contamination, and must be named in the
+  contamination check's own allowlist rather than silently tripping it
+  (dispatch's explicit "produce an explicit, source-verified allowlist
+  ... distinguishing genuine treatment information, derived metadata
+  changes caused by that information, and unexpected differences").
+- **A genuine, structural digest-compatibility defect, found and fixed
+  by the same second independent dispatch, directly affecting whether
+  this plan's own central signal (the required-scope-gap count dropping
+  from 3 to 2) can ever actually appear**: the real `balance-from-spec`
+  `oracle-contract.yaml`'s own three required checks **all three** list
+  the identical `test_input_paths: [tests/test_reports.py, tests/
+  fixtures/filtered.journal]` (confirmed by direct read of the live
+  file) — `oracle.compute_tree_digest` hashes the **whole named file's**
+  content, not a single test method's own body, so adding the pinned
+  overlapping-pattern test to `tests/test_reports.py` changes the
+  `test_input_digest` every one of the three checks would recompute,
+  not only the one the new test targets. `knowledge_intermediate.
+  derive_epistemic_profile` (the function `_knowledge_consistency`
+  calls to populate `known_gap_scopes`) only ever counts a cited result
+  as `matched_pass` when `evaluate_result_precedence(..., repo_root=
+  live_repo_root)` returns `"PASS"` — and `evaluate_result_precedence`
+  recomputes `test_input_digest` live against whatever `repo_root` is
+  actually passed. **A pristine, untouched reference checkout (the
+  pinned revision with no test added) therefore makes the newly created
+  `EV-BALANCEFROMS-004` Evidence's own `OracleResult` evaluate `INVALID`,
+  not `PASS`, the moment `repo_root` is supplied** — `matched_pass`
+  stays `False`, the scope falls through to `known_gap_scopes` exactly
+  as if the reconciliation had never happened, and the post-Task-A
+  packet would silently show the same `"3 required scope(s)…"` text as
+  the pre-Task-A one, defeating the entire experiment while looking,
+  superficially, like a correctly generated packet. **Confirmed by
+  direct, live reproduction this amendment session**: generating both
+  packets against a reference checkout that genuinely contains the
+  pinned test (§5.2/§5.3 below, now a single shared checkout) correctly
+  produces `"2 required scope(s)…"` for the post packet; the
+  mechanism's own real failure mode (an unmodified reference checkout
+  producing `INVALID` and silently keeping the count at `"3"`) was also
+  directly reproduced and confirmed, not merely reasoned about. The
+  fix — one single, shared, disposable reference checkout, already
+  containing the exact Task A test, used for **both** packet-generation
+  calls — is specified in §5.2/§5.3 below; it is never exposed to either
+  development arm.
 - **Independent-evaluation infrastructure**: `context-evaluator`
   (`.claude/agents/context-evaluator.md`) — produces a PASS / PASS
   WITH GAPS / FAIL verdict and a LOW / MODERATE / HIGH context-advantage
@@ -143,6 +212,19 @@ assumed from the pre-registration's own prose.
   `06-stage-d-reportspec-stage1-*-boundary-check.md` (per-arm read-scope
   audit) are the direct, already-proven templates this plan reuses
   (§5.2/§5.5 below), not reinvented.
+- **A second, independent, blocking finding from the same dispatch**:
+  an earlier draft of §4/§7/§8 gave the **treatment** arm its own
+  post-reconciliation packet but gave the **control** arm no packet at
+  all — comparing "knowledge plus stronger verification" against "no
+  supplied knowledge," not isolating the one variable the pre-
+  registration (§7 of `planning/retros/phase-89-ledgerkit-two-task-
+  demonstration.md`) actually names: "Control packet: an otherwise
+  byte-identical packet drawn from the pre-reconciliation snapshot."
+  Fixed throughout §4.1/§7/§8/§9/§11 below: **both** arms now receive
+  their own respective pre-generated packet (`control-packet.json` /
+  `treatment-packet.json`), via identical delivery method and identical
+  framing wording, differing only in which knowledge snapshot each was
+  generated from.
 - **Governing ground rules already established and binding on this
   plan, not optional**:
   - `context-quality-evaluation.md` §1 (`L-027`, amended 2026-09-19):
@@ -304,11 +386,26 @@ variable):
 | Task specification | §3, verbatim | §3, verbatim, byte-identical |
 | Source-code baseline | Ledgerkit @ `a7740fd04fe1814d2a557bfcb67a9a775a4a22f9`, forked scratch clone | same frozen commit, a separate forked scratch clone |
 | Model / settings | same model, same effort/settings as this session's own default subagent configuration (no per-arm override) | same |
-| Tool access | `Read`, `Grep`, `Glob`, `Bash` (to run Ledgerkit's own test suite and `git log`/`git blame` inside its own assigned clone only) | identical, **plus** the one pre-generated context packet (§5), supplied as a file in the dispatch prompt — **not** live `codecompass` CLI access (the packet is pre-generated and frozen so both arms' own context input is exactly reproducible and diffable; granting live CLI access would reintroduce exactly the "which arm investigated harder" confound `L-027` exists to catch) |
+| Tool access | `Read`, `Grep`, `Glob`, `Bash` (to run Ledgerkit's own test suite and `git log`/`git blame` inside its own assigned clone only), **plus the one pre-generated `control-packet.json` context packet (§5), supplied as a file in the dispatch prompt** | identical, **plus** the one pre-generated `treatment-packet.json` context packet (§5), supplied as a file in the dispatch prompt — **neither** arm gets live `codecompass` CLI access (both packets are pre-generated and frozen so both arms' own context input is exactly reproducible and diffable; granting live CLI access would reintroduce exactly the "which arm investigated harder" confound `L-027` exists to catch). **Both arms receive a packet, via the identical delivery method and the identical one-sentence framing** (§7.2/§7.3) — the sole intended difference between the two files is the specified Task A reconciliation-related knowledge (§5), never "packet vs. no packet" (corrected, second independent dispatch: an earlier draft gave only the treatment arm a packet, which would have measured the effect of supplying any context at all, not the incremental effect of the reconciled Evidence specifically) |
 | Resource limits | one dispatch, no retries unless §10's failure handling triggers one, identical wall-clock/tool-call budget as the other arm | identical |
 | Acceptance criteria | §6's pinned test, never shown to either arm in advance, never adjustable after results are seen | identical |
 | Development instructions unrelated to treatment | identical boilerplate (write code, add your own unit tests if you wish, do not modify files outside your assigned clone) | identical |
 | Initial implementation state | unmodified Ledgerkit @ pinned commit | identical |
+
+**Symmetric packet-delivery wording, fixed verbatim for both arms**
+(differs only in which file is actually attached): *"Attached is a
+CodeCompass context packet for the knowledge record relevant to this
+task. You may use it, ignore it, or verify its contents against the
+source."* Neither arm is ever told whether its own packet is "control"
+or "treatment," or that the other arm received a differently-sourced
+one — the dispatch prompts are otherwise byte-identical apart from the
+assigned clone path and the one attached packet file (§7.2/§7.3).
+
+**Acceptance criterion for this section** (the second independent
+dispatch's own explicit framing, reproduced verbatim as the standard
+this plan's §4/§7/§8 must now meet): *the experiment measures the
+incremental effect of reconciled Evidence, not the broader effect of
+providing any CodeCompass context at all.*
 
 ### 4.2 Isolation (reusing the established Ledgerkit-trial pattern verbatim, `planning/phase-78-priority-a-closeout-and-second-ledgerkit-trial.md` §5.2)
 
@@ -369,31 +466,68 @@ Starting from a **fresh copy** of the same pre-reconciliation snapshot
 `-contracts`), reproduce Task A's own already-demonstrated,
 already-audited procedure exactly (`planning/retros/
 phase-89-stage-89b-ledgerkit-demonstration.md`, detector (b) section),
-against a **third**, separate Ledgerkit scratch clone used only for
-this regeneration step (never `ledgerkit-control`/`ledgerkit-treatment`
-from §4.2 — this snapshot-generation clone is disposed of before either
-arm's own dispatch, so there is no possibility of either arm's own
-Ledgerkit clone carrying any trace of this step):
+against **one single, separate Ledgerkit scratch clone, `$LK_REF`**
+(never `ledgerkit-control`/`ledgerkit-treatment` from §4.2 — this clone
+is disposed of before either arm's own dispatch, so there is no
+possibility of either arm's own Ledgerkit clone carrying any trace of
+this step).
+
+**This one clone is reused, unmodified, as §5.3's own
+`REPO_ROOT_REFERENCE` for *both* packet-generation calls below — it is
+never a separate, pristine, untouched clone.** This is a corrected
+merge (second independent dispatch, "Phase 89C Plan Corrections and
+Independent Re-Review"): an earlier draft of this plan used a
+**pristine** fourth clone (pinned at the same commit, but *without* the
+overlapping-pattern test ever added) as the packet-generation reference
+checkout, while a *separate*, fifth clone (`$LK` in that earlier draft)
+carried the test for the reconciliation step only. **This is a genuine,
+structural bug, not a cosmetic inconsistency — confirmed by direct,
+live reproduction this amendment session**: the real `balance-from-spec`
+`oracle-contract.yaml`'s three required checks all share the identical
+`test_input_paths` list (`tests/test_reports.py`,
+`tests/fixtures/filtered.journal` — confirmed by direct read of the
+live file), so `oracle.compute_tree_digest` hashes the *whole* file,
+and a reference checkout missing the newly-added test method has a
+different `test_input_digest` than the one recorded on the fresh
+`OracleResult` the reconciliation step just created. `evaluate_result_
+precedence` (called from `derive_epistemic_profile`, which
+`_knowledge_consistency` uses to populate `known_gap_scopes`) recomputes
+that digest live whenever `repo_root` is supplied — against a pristine
+reference checkout, the newly-cited Evidence's own `OracleResult`
+therefore evaluates `INVALID`, not `PASS`, `matched_pass` stays `False`,
+and the post-Task-A packet silently keeps `known_gap_scopes` at the
+same count of `3` as the pre-Task-A packet — the exact signal this
+experiment depends on would never actually appear, with no error or
+warning anywhere in the procedure. Directly reproduced both ways this
+session: a pristine reference checkout reproducibly keeps the count at
+`"3 required scope(s)…"` for the post packet; this single, shared,
+test-containing reference checkout correctly produces `"2 required
+scope(s)…"` (§5.4's own diff, reproduced below). **The reference
+checkout is never exposed to either development arm** (§4.1) — it
+exists solely so the packet-generation step's own live reconfirmation
+has something real to reconfirm against.
 
 ```
-LK=<scratch>/ledgerkit-for-reconciliation   # fresh clone, pinned a7740fd0...
+LK_REF=<scratch>/ledgerkit-reference        # ONE clone, pinned a7740fd0...,
+                                             # reused for both reconciliation
+                                             # AND both packet-generation calls
 KN=<scratch>/knowledge-post                 # the fresh copy being advanced
 CT=<scratch>/knowledge-post-contracts
 
-# 1. Add the real, pinned overlapping-pattern test to $LK (exact body
-#    already pinned by Stage 89A/89B, reproduced in
+# 1. Add the real, pinned overlapping-pattern test to $LK_REF (exact
+#    body already pinned by Stage 89A/89B, reproduced in
 #    phase-89-stage-89b-ledgerkit-demonstration.md):
 #    test_section_accounts_overlapping_patterns_no_double_count
-# 2. Confirm it passes directly: $LK/.venv/bin/python -m pytest
-#    $LK/tests/test_reports.py -k overlapping_patterns_no_double_count -q
+# 2. Confirm it passes directly: $LK_REF/.venv/bin/python -m pytest
+#    $LK_REF/tests/test_reports.py -k overlapping_patterns_no_double_count -q
 # 3. Re-sync the one changed file's content hash into a disposable
-#    context-graph.db for $LK (direct sqlite3 UPDATE, the established
+#    context-graph.db for $LK_REF (direct sqlite3 UPDATE, the established
 #    lighter-weight technique, not a full `codecompass sync`).
 # 4. codecompass knowledge detect-changes balance-from-spec \
-#      --repo-root $LK --probe-coverage --json   (project_root = the
+#      --repo-root $LK_REF --probe-coverage --json   (project_root = the
 #      directory containing $KN/$CT as planning/knowledge/.../
 #      planning/contracts/...)
-# 5. codecompass knowledge verify-changes balance-from-spec --repo-root $LK
+# 5. codecompass knowledge verify-changes balance-from-spec --repo-root $LK_REF
 # 6. Accept the one resulting manifest item (decision = "accept") and
 #    codecompass knowledge apply <manifest>
 ```
@@ -409,7 +543,19 @@ authored `statement` field is **byte-identical** to the
 pre-reconciliation copy (confirm via direct text comparison of the
 `statement` block specifically — the mechanism's own documented
 invariant, "never rewrites authored prose," reconfirmed live rather
-than trusted from the ADR's own prose).
+than trusted from the ADR's own prose — reconfirmed exactly this way in
+this amendment's own reproduction: the YAML folds the same prose onto a
+single flow-scalar line versus the original's wrapped block form, but
+`" ".join(text.split())`-normalised content, the same normalisation
+`_summarize_record` itself applies, is identical word-for-word). The
+new Evidence record's own `repository_revision` field will read
+something like `"a7740fd0...+dirty (tested_subject_digest=...,
+test_input_digest=...)"` — the `+dirty` suffix is expected and benign
+(the pinned test was added to `$LK_REF` as an uncommitted edit, exactly
+as `source_reconciliation._repo_revision`'s own documented dirty-tree
+handling anticipates); it is new, treatment-only information fully
+contained within the one new Evidence item (§5.4's own allowlist item
+1), never a separate concern.
 
 ### 5.3 Packet generation (identical code, two different data roots)
 
@@ -417,13 +563,22 @@ than trusted from the ADR's own prose).
 # PROJECT_ROOT_PRE  = a disposable root containing $KN-pre's own
 #                     planning/knowledge/, planning/contracts/
 # PROJECT_ROOT_POST = the equivalent root for $KN (post)
-# REPO_ROOT_REFERENCE = <scratch>/ledgerkit-packet-reference, a FOURTH,
-#                      separate, read-only Ledgerkit clone pinned at
-#                      the same a7740fd0... (never ledgerkit-control/
-#                      -treatment/-for-reconciliation — this clone's
-#                      only job is to let get_context_packet's own
-#                      consistency computation live-reconfirm against
-#                      a real checkout; it is never shown to either arm)
+# REPO_ROOT_REFERENCE = $LK_REF from §5.2 -- the SAME clone the
+#                      reconciliation step just ran against, already
+#                      containing the pinned overlapping-pattern test
+#                      (never ledgerkit-control/-treatment, and never a
+#                      separate, pristine clone without the test added --
+#                      corrected, second independent dispatch, "Phase
+#                      89C Plan Corrections and Independent Re-Review":
+#                      an earlier draft used a pristine reference clone
+#                      here, which made the newly-created OracleResult
+#                      evaluate INVALID against it (test_input_digest
+#                      mismatch, §5.2), silently defeating the very
+#                      signal this packet pair exists to show. This
+#                      clone's only job is to let get_context_packet's
+#                      own consistency computation live-reconfirm
+#                      against a real checkout; it is never shown to
+#                      either arm)
 
 # `codecompass knowledge context` resolves project_root from the
 # process's own cwd (`cli.py::knowledge_context` calls
@@ -467,48 +622,87 @@ diff <(jq -S . control-packet.json) <(jq -S . treatment-packet.json)
 Expected, and required, differences — enumerate and verify each
 mechanically, do not eyeball:
 
-1. `items`: `treatment-packet.json` contains exactly one additional
-   item versus `control-packet.json` — the new test-kind Evidence
-   record `supporting_evidence` now cites (confirm its `id` resolves
-   to `evidence_kind: test`, `what_it_shows` mentioning the
-   overlapping-pattern check).
-2. The `CL-BFS-004` item's own `consistency.status` **and**
-   `consistency.evidence_currency`: **expected to stay identical in
-   both packets** (§1's own corrected finding, itself corrected a
-   second time after independent review — `CL-BFS-004` only ever cites
-   one of the contract's three required checks, so neither the
-   aggregate `status` nor `evidence_currency` ever reaches `"current"`
-   for it, regardless of Task A or `repo_root`; do not treat identical
-   `status`/`evidence_currency` values here as a contamination
-   problem). The genuine, required difference is in `consistency.
-   reasons`'s own text — specifically its embedded count of required
-   scopes with no passing evidence (3 pre-Task-A, 2 post-Task-A; it
-   never names the overlapping-pattern scope specifically, only the
-   count). **If `reasons` is also byte-identical between the two
-   packets, this is the real blocking setup error** (most likely
-   cause: §5.2's post-reconciliation snapshot was not actually
-   generated/applied correctly, or §5.3's two calls did not actually
-   run against different project roots — re-check the `cmp` step at
-   the end of §5.3 first) — stop and fix before dispatching either
+**Explicit, source-verified allowlist of every permitted changed JSON
+path (second independent dispatch's own required "distinguish genuine
+treatment information / derived metadata changes caused by that
+information / unexpected differences" categorisation, reproduced
+exactly, confirmed against a real, live diff of both packets this
+amendment session — see below for the full output):**
+
+1. **Genuine treatment information** — `items`: `treatment-packet.json`
+   contains exactly one additional item versus `control-packet.json`,
+   `kind: "evidence"`, `id` resolving to the new, `evidence_kind: test`
+   record `supporting_evidence` now cites (`what_it_shows` mentioning
+   the overlapping-pattern check). That new item's own `consistency.
+   source_revision` embeds a `+dirty (tested_subject_digest=...,
+   test_input_digest=...)` string (§5.2) — expected, fully contained
+   within this one new item, not a separate allowlist entry.
+2. **Derived metadata change caused directly by item 1** — the
+   `CL-BFS-004` item's own `consistency.knowledge_revision` (a SHA-256
+   of `CL-BFS-004.yaml`'s own raw file content, `_knowledge_consistency`'s
+   first computed field): necessarily differs, since `apply_manifest`
+   genuinely rewrote that file's `evidence_support_state`/
+   `supporting_evidence` fields. This is not itself informative (it is
+   just a content hash), but its presence in the diff is expected and
+   must not be mistaken for an unrelated contamination.
+3. **The genuine, required mechanical signal** — the `CL-BFS-004`
+   item's own `consistency.reasons` text: specifically its embedded
+   count of required scopes with no passing evidence (3 pre-Task-A, 2
+   post-Task-A; it never names the overlapping-pattern scope
+   specifically, only the count). **If `reasons` is also byte-identical
+   between the two packets, this is the real blocking setup error**
+   (most likely cause: §5.2's post-reconciliation snapshot was not
+   actually generated/applied correctly; §5.3's two calls did not
+   actually run against different project roots — re-check the `cmp`
+   step at the end of §5.3 first; **or** §5.2's reference-checkout fix
+   was not applied and a pristine reference clone is being used,
+   silently keeping the new Evidence's own result `INVALID`, per §5.2's
+   own corrected explanation) — stop and fix before dispatching either
    arm, per §5's own "if the intended isolation cannot be achieved,
    identify this as an experimental validity blocker" instruction
    (§10 below).
-3. `CL-BFS-004`'s own `summary` field: **byte-identical** across both
-   packets (the authored statement is never rewritten — confirmed, not
-   assumed, §5.2).
-4. Every other item's own `summary`/`consistency`: byte-identical
-   (neither packet differs anywhere outside the `CL-BFS-004` subject's
-   own `reasons` count and its newly-added Evidence neighbour item).
+4. **Expected to stay identical in both packets — not a contamination
+   when unchanged** — the `CL-BFS-004` item's own `consistency.status`
+   **and** `consistency.evidence_currency` (§1's own corrected finding,
+   corrected a second time after independent review — `CL-BFS-004`
+   only ever cites one of the contract's three required checks, so
+   neither the aggregate `status` nor `evidence_currency` ever reaches
+   `"current"` for it, regardless of Task A or `repo_root`); its own
+   `summary` field (the authored statement is never rewritten —
+   confirmed, not assumed, §5.2); every other item's own `summary`/
+   `consistency` (neither packet differs anywhere outside `CL-BFS-004`'s
+   own `knowledge_revision`/`reasons` and its newly-added Evidence
+   neighbour item).
 
-**If the diff shows anything beyond item 1 (the new Evidence item) and
-item 2's own `reasons` count change above**: this is a
-contamination finding. Do not proceed to dispatch either arm. Document
-the exact unexpected difference and treat it as a blocker requiring a
-separately documented decision (§4 below), never silently patched by
-hand-editing either packet file (hand-editing a packet to "fix" an
-unwanted difference is itself exactly the prohibited "give the
-treatment arm a different task description... or privileged access"
-failure mode, applied to context instead of task text).
+**Any difference outside the four categories above is a contamination
+finding.** Do not proceed to dispatch either arm. Document the exact
+unexpected difference and treat it as a blocker requiring a separately
+documented decision (§4 below), never silently patched by hand-editing
+either packet file (hand-editing a packet to "fix" an unwanted
+difference is itself exactly the prohibited "give the treatment arm a
+different task description... or privileged access" failure mode,
+applied to context instead of task text).
+
+**Confirmed by direct, live reproduction this amendment session**
+(second independent dispatch's own mandatory feasibility reproduction):
+generating both packets against the single, shared, test-containing
+reference checkout (§5.2's fix) and running `diff <(jq -S .
+control-packet.json) <(jq -S . treatment-packet.json)` produced
+*exactly* the three differences named above — the new `EV-BALANCEFROMS-
+004` item (category 1), `CL-BFS-004`'s own `knowledge_revision` hash
+(category 2), and `CL-BFS-004`'s own `reasons` text changing from `"3
+required scope(s) have no passing evidence at all"` to `"2 required
+scope(s)…"` (category 3) — and nothing else; `status`/`evidence_
+currency`/`summary` were confirmed byte-identical across both packets,
+and both packets' own `gaps` arrays were confirmed empty in both. A
+second run against a deliberately pristine (un-fixed) reference
+checkout was also reproduced, confirming the real failure mode category
+3's own "most likely cause" text names: `reasons` stayed at `"3
+required scope(s)…"` in *both* packets, which would have been wrongly
+read as "contamination-free" by a mechanical diff that only checks for
+unexpected differences, rather than the real blocker it actually is —
+this is exactly why §5.4's own check must positively assert that
+`reasons` *does* differ, not merely that nothing unexpected appears.
 
 ### 5.5 Stale-prose handling — resolved without altering the registered treatment
 
@@ -649,6 +843,66 @@ class TestCombinedSectionAcceptance(unittest.TestCase):
         income_result, expense_result = balance_from_spec(self.journal, spec)
         self.assertEqual(income_result.subtotal, Decimal("6000.00"))
         self.assertEqual(expense_result.subtotal, Decimal("1359.00"))
+
+    # --- Added by the second independent dispatch ("Phase 89C Plan
+    # Corrections and Independent Re-Review", §6): the original seven
+    # tests above left three behaviours §3 explicitly requires
+    # untested -- exclude-pattern union, depth-conflict rejection, and
+    # label override/default handling. Each new test below was verified
+    # this amendment session against both a correct reference
+    # implementation (all eleven tests pass) and, for the exclude-union
+    # test specifically, a plausible incorrect one (an implementation
+    # that unions `accounts` but forgets to union `exclude` at all) --
+    # confirmed to fail *exactly* `test_union_of_exclude_patterns` and
+    # no other test, i.e. a genuinely discriminating addition, not a
+    # restatement of an existing assertion.
+
+    def test_union_of_exclude_patterns(self):
+        # section_a excludes nothing; section_b excludes "coffee". The
+        # combined section's own exclude must be the UNION, not just one
+        # side's -- an implementation that drops or only keeps one
+        # section's own exclude set would silently include the coffee
+        # posting it should not.
+        section_a = ReportSection("Groceries only", accounts=("groceries",))
+        section_b = ReportSection("Food minus coffee", accounts=("food",), exclude=("coffee",))
+        combined = ReportSpec.with_combined_section("Combined", section_a, section_b)
+        self.assertEqual(set(combined.accounts), {"groceries", "food"})
+        self.assertEqual(set(combined.exclude), {"coffee"})
+        spec = ReportSpec(name="Exclude union check", sections=(combined,))
+        [result] = balance_from_spec(self.journal, spec)
+        # groceries (150.00) matches accounts, not excluded. coffee (9.00)
+        # matches the "food" account pattern but IS excluded by "coffee".
+        self.assertEqual(result.subtotal, Decimal("150.00"))
+        self.assertNotIn("expenses:food:coffee", result.rows)
+
+    def test_conflicting_depth_raises(self):
+        shallow = ReportSection("Shallow", accounts=("expenses",), depth=1)
+        deep = ReportSection("Deep", accounts=("expenses",), depth=2)
+        with self.assertRaises(ValueError):
+            ReportSpec.with_combined_section("Mixed depth", shallow, deep)
+
+    def test_label_override_used(self):
+        groceries = ReportSection("Groceries", accounts=("groceries",))
+        food = ReportSection("Food", accounts=("food",))
+        combined = ReportSpec.with_combined_section(
+            "Groceries and Food", groceries, food, label="Food Spend",
+        )
+        self.assertEqual(combined.label, "Food Spend")
+
+    def test_default_label_omitted_matches_ordinary_section_convention(self):
+        # ReportSection's own default is label=None (the f"Total {name}"
+        # convention documented in its docstring is resolved by a future
+        # renderer, never stored on the section itself -- confirmed by
+        # direct inspection: no reference to `.label` exists anywhere in
+        # ledgerkit/*.py today). with_combined_section must leave the
+        # same None default when no override is given, never inventing
+        # its own eager resolution no ordinary ReportSection performs.
+        groceries = ReportSection("Groceries", accounts=("groceries",))
+        food = ReportSection("Food", accounts=("food",))
+        combined = ReportSpec.with_combined_section("Groceries and Food", groceries, food)
+        self.assertIsNone(combined.label)
+        ordinary = ReportSection("Groceries and Food", accounts=("groceries", "food"))
+        self.assertEqual(combined.label, ordinary.label)
 ```
 
 **Creation sequence** (performed by the verifier, once per arm, after
@@ -678,16 +932,51 @@ oracle from the implementing agents" instruction):
        - tests/fixtures/filtered.journal
      required: true
    ```
-   (the five other test methods in the file are run directly via
+   (the ten other test methods in the file are run directly via
    `pytest`, not individually wired into the oracle contract — only the
    one scope this comparison is actually about needs a durable,
    provenance-tracked `OracleResult`; the rest are ordinary correctness
    gates reported as plain pytest pass/fail, per §9's reporting schema).
-5. `oracle.run_pytest_check(repo_root=<verify clone>, check_reference=
-   "tests/test_combined_section_acceptance.py")` for the full file (all
-   seven tests, a durable `OracleResult` with real provenance) **and**
-   separately `pytest tests/test_combined_section_acceptance.py -v`
-   for per-test visibility in the report.
+5. **Create the one durable, provenance-tracked `OracleResult` for the
+   primary scope via the real Phase 82 API, not `oracle.run_
+   pytest_check` alone** (corrected, second independent dispatch, "Phase
+   89C Plan Corrections and Independent Re-Review" — an earlier draft
+   described `run_pytest_check` itself as producing a durable
+   `OracleResult`; its real signature, confirmed by direct source
+   reading, is `run_pytest_check(repo_root, check_reference, ...) ->
+   tuple[str, str | None, str]` — `(outcome, invalid_reason,
+   raw_output_text)`, with no contract/digest/provenance fields at all,
+   and it persists nothing). The actual sequence, confirmed to work
+   end-to-end by direct reproduction this amendment session against a
+   real disposable verification clone:
+   ```python
+   contract = oracle.parse_oracle_contract(disposable_contract_path)
+   check = contract.check_by_id("combined-section-no-double-count")
+   result = oracle.evaluate_check(
+       contract, check, contract_path=disposable_contract_path,
+       repo_root=verify_clone_path, raw_output_dir=raw_output_dir,
+   )  # executes the one pytest node id itself, internally, and returns
+      # a fully-populated OracleResult (run_id, tested_subject_digest,
+      # test_input_digest, contract hash, outcome, raw_output_ref/sha256)
+   oracle.write_oracle_result(result_path, result)             # persist
+   reparsed = oracle.parse_oracle_result(result_path)           # round-trip
+   effective, reason = oracle.evaluate_result_precedence(
+       reparsed, contract, check, contract_path=disposable_contract_path,
+       repo_root=verify_clone_path,
+   )  # independent validation -- must be "PASS" for a correct arm
+   ```
+   Reproduced directly this session (a disposable `STAGE89C-TASKB-VERIFY`
+   contract naming only `combined-section-no-double-count`, against a
+   correct reference implementation): `evaluate_check` returned
+   `outcome="PASS"`; the written-then-reparsed result's own `outcome`
+   matched; `evaluate_result_precedence` independently returned
+   `("PASS", None)`. Record the result's own `run_id`, `tested_subject_
+   digest`, `test_input_digest`, `oracle_contract_content_hash`,
+   `outcome`, and `raw_output_ref` directly from the returned/reparsed
+   `OracleResult` object — never re-derived or guessed. **Separately**
+   (for per-test visibility in the report, not for provenance), run the
+   full file directly: `pytest tests/test_combined_section_acceptance.py
+   -v` (all eleven tests).
 6. Run the verification clone's own **full, pre-existing** Ledgerkit
    test suite (`pytest -q`) — confirm no regression versus the frozen
    commit's own known-green baseline (existing-compatibility
@@ -714,25 +1003,37 @@ step 1-2 above.
    itself states the assigned working directory
    (`<scratch>/ledgerkit-control`) and instructs the agent to do all
    its work there. Prompt contains: §3's task text verbatim, §4.2's
-   read-scope statement, and **no context-packet file** (control's own
-   independent variable value: none).
-3. Dispatch the **treatment** arm identically, except: assigned
-   directory `<scratch>/ledgerkit-treatment`, and the prompt includes
-   `treatment-packet.json`'s own content verbatim (attached or inlined
-   — record which, for the evaluator's own benefit) plus one sentence
-   of framing: "The attached context packet was generated by
-   CodeCompass's own knowledge-tracking system for the record most
-   relevant to this task; you may use it, ignore it, or verify it
-   against the source yourself — your choice, as a real developer's
-   would be."
+   read-scope statement, **and `control-packet.json`'s own content
+   verbatim** (attached or inlined — record which, consistently with
+   step 3 below), plus §4.2's symmetric one-sentence framing: *"Attached
+   is a CodeCompass context packet for the knowledge record relevant to
+   this task. You may use it, ignore it, or verify its contents against
+   the source."* **Corrected, second independent dispatch ("Phase 89C
+   Plan Corrections and Independent Re-Review"): an earlier draft gave
+   the control arm no packet at all here** — comparing "knowledge plus
+   stronger verification" against "no supplied knowledge" instead of
+   isolating the one pre-registered variable (§1/§4.1). The control arm
+   is never told its own packet is the "control" one, or that a
+   differently-sourced packet exists at all.
+3. Dispatch the **treatment** arm identically in every other respect,
+   except: assigned directory `<scratch>/ledgerkit-treatment`, and the
+   prompt includes `treatment-packet.json`'s own content verbatim
+   (attached or inlined, matching step 2's own choice), with the
+   **identical** one-sentence framing from §4.2 — not a separately
+   worded sentence (an earlier draft used a longer, differently-phrased
+   sentence for the treatment arm only, which this amendment replaces
+   with the shared, symmetric wording so the only intended difference
+   between the two prompts is which packet file is attached and which
+   scratch directory is assigned).
 4. **Observable research-trace requirement** (reused from Phase 78
    §5.3.4 verbatim): both agents' own final reports must record every
    file read, every search/grep, every test/command run and its
    result, files revisited and why, each major decision and what
-   specifically informed it (for the treatment arm: whether and how the
-   packet's own content informed the dedup decision specifically), and
-   any assumption later corrected. The control arm states "n/a, no
-   context packet supplied" rather than leaving that section blank.
+   specifically informed it (for **both** arms, symmetrically: whether
+   and how their own supplied packet's content informed the dedup
+   decision specifically), and any assumption later corrected. Neither
+   arm states "n/a" here any longer — both now receive a packet
+   (corrected alongside steps 2-3 above).
 5. **Both agents' full reports are written to disk immediately on
    receipt** (`<scratch>/control-report.md`, `<scratch>/
    treatment-report.md`), before §6's own verification run and before
@@ -750,8 +1051,12 @@ step 1-2 above.
    <arm>-boundary-check.md`, same format as `06-stage-d-reportspec-
    stage1-*-boundary-check.md`) — a mechanical audit of that arm's own
    recorded tool calls, confirming every path referenced resolved
-   inside its own assigned clone (plus, for the treatment arm, the one
-   supplied packet file) and nowhere else. A violation here is itself a
+   inside its own assigned clone (plus, for both arms now, the one
+   packet file each was respectively supplied) and nowhere else —
+   confirming specifically that neither arm read the other arm's own
+   clone, dispatch prompt, report, or packet file (dispatch's own
+   explicit "neither arm can access the other arm's packet or
+   development outputs" requirement). A violation here is itself a
    validity finding, not silently excluded from the report.
 
 ## 8. Blinded independent evaluation methodology
@@ -764,16 +1069,39 @@ step 1-2 above.
    dispatching the `context-evaluator` — the evaluator's own job is
    context quality, not re-deriving whether the code happens to pass;
    both facts are reported together but produced independently (§9).
-2. Dispatch a **fresh** `context-evaluator` (never a `fork`, never
-   given the control/treatment labels) with: both arms' own
-   `ledgerkit-verify-*` clones (containing each arm's own actual code
-   change plus the pinned acceptance test), both arms' own full reports
-   (§7.5), and both packet files — labelled **"Draft 1"/"Draft 2"**,
-   order randomised per run (not always treatment-first), never told
-   which is which. Matches the already-proven blind-comparison
-   convention (`planning/retros/
-   phase-87-stage-87c-knowledge-compiled-documentation.md` §4/§S.7).
-3. The evaluator's own instructions (beyond its own standing agent
+2. **Allocation-blinded presentation (hardened, second independent
+   dispatch, "Phase 89C Plan Corrections and Independent Re-Review"):
+   an earlier draft supplied filenames/paths containing the literal
+   strings "control"/"treatment" to the evaluator (`control-packet.json`,
+   `ledgerkit-verify-control`, `control-report.md`, etc.) — this reveals
+   allocation despite the surrounding text calling the comparison
+   "blind."** Before dispatching the evaluator, the verifier copies
+   each arm's own artifacts into a neutral, randomly-assigned pair of
+   directories/filenames (`<scratch>/draft-1/`, `<scratch>/draft-2/`,
+   re-randomised per run — not always the same arm as "Draft 1"):
+   `draft-N-packet.json`, `draft-N-report.md`, `draft-N-verify/` (a copy
+   of that arm's own `ledgerkit-verify-*` clone). The allocation key
+   (which draft number is actually control vs. treatment) is written to
+   a separate file the evaluator is never given, and is not consulted
+   again until after the evaluator's own verdict is received. Dispatch
+   a **fresh** `context-evaluator` (never a `fork`, never given the
+   control/treatment labels) with only the neutral `draft-1`/`draft-2`
+   material — order of which real arm becomes "Draft 1" is randomised
+   per run. Matches the already-proven blind-comparison convention
+   (`planning/retros/phase-87-stage-87c-knowledge-compiled-
+   documentation.md` §4/§S.7), now applied to every artifact path the
+   evaluator sees, not only its own framing sentence.
+3. **Acknowledged, explicit limitation on blinding**: the Evidence
+   content itself may reveal which snapshot is more recently reconciled
+   (e.g. `EV-BALANCEFROMS-004` only exists in one draft's own packet) —
+   this is **substantive Evidence the evaluator must see to do its own
+   job** (per `context-quality-evaluation.md` §3's own accuracy/
+   relevance/completeness criteria), never concealed merely to preserve
+   blinding. This plan describes the procedure as **allocation-blinded
+   where practically achievable** (filenames, paths, directory
+   structure, framing language), not perfectly blinded — the content
+   itself is read on its own merits, same as a real developer would.
+4. The evaluator's own instructions (beyond its own standing agent
    definition): inspect the real Ledgerkit source/tests directly to
    establish ground truth (never trusting either draft's own
    self-report); confirm the two packet files' own diff matches
@@ -792,19 +1120,29 @@ step 1-2 above.
    disagreement it notices; and explicitly answer, separately for each
    draft, "Would this have misled the implementing agent? yes/no/
    partially."
-4. **The evaluator reports a negative or inconclusive result exactly as
+5. **The evaluator reports a negative or inconclusive result exactly as
    found** — no reinterpretation, no "but it would probably help on a
    harder task" narrative substitution (dispatch's own explicit
    instruction, §9 below enforces this at the reporting-schema level
    too).
-5. A **separate** `release-phase-auditor` dispatch (never the
+6. A **separate** `release-phase-auditor` dispatch (never the
    evaluator, never the lead) verifies, after the evaluator's own
    report exists: that this exact plan's own pinned procedure (§4-§8)
    was actually followed (fork-then-dispatch order, read-scope
-   statements present verbatim in both dispatch prompts, the
+   statements present verbatim in both dispatch prompts, both prompts
+   using the identical symmetric packet-framing sentence from §4.2, the
    acceptance test file unmodified from this plan's own §6 text, the
    evaluator genuinely blinded) — a **procedural-fidelity** audit,
-   distinct from the evaluator's own content judgment.
+   distinct from the evaluator's own content judgment. This same
+   dispatch additionally **audits every evaluator-visible artifact and
+   instruction for accidental allocation disclosure** (dispatch's own
+   explicit requirement, item 7 above): greps the neutral `draft-1`/
+   `draft-2` material and the evaluator's own dispatch prompt for the
+   literal strings `control`/`treatment` (case-insensitive) and for any
+   file path, clone name, or filename that leaked unredacted from §4.2's
+   own internal naming — any hit is reported as a blinding-violation
+   finding, not silently excluded, and voids that run's own blinding
+   claim (§10's own failure-handling path).
 
 ## 9. Metrics and result-reporting schema
 
@@ -828,7 +1166,7 @@ One report per trial run, at `planning/reference-projects/ledgerkit/
 
 ### Outcome 2 — Controlled evaluation validly executed
 <PASS/FAIL on procedural fidelity -- cites the release-phase-auditor's
-own §8.5 report; any read-scope violation, contamination, or isolation
+own §8.6 report; any read-scope violation, contamination, or isolation
 failure found belongs here, and invalidates outcome 3 below if severe
 enough, per §10's failure-handling rules>
 
@@ -888,12 +1226,18 @@ same way.
   a tool-call error unrelated to the task itself); a second failure is
   reported as such, not retried again.
 - **§5.4's contamination check fails** (packets differ outside the
-  expected fields, or `consistency.reasons` does not actually diverge
-  for `CL-BFS-004`): stop before dispatching either arm. This is an
-  experimental-validity blocker (§1's own instruction), not something
-  to patch by hand. Fix the packet-generation call (most likely cause:
+  four-category allowlist, or `consistency.reasons` does not actually
+  diverge for `CL-BFS-004`): stop before dispatching either arm. This is
+  an experimental-validity blocker (§1's own instruction), not something
+  to patch by hand. Fix the packet-generation call (candidate causes, in
+  order of likelihood established by this amendment's own reproduction:
+  (1) a pristine, untouched reference checkout is being used instead of
+  §5.2's single, shared, test-containing one — the newly-cited
+  Evidence's `OracleResult` then evaluates `INVALID` against it, keeping
+  `reasons` at `"3 required scope(s)…"` in *both* packets, which a
+  naive diff would wrongly read as "clean" rather than "broken"; (2)
   §5.3's two calls did not run against different project roots — check
-  the `cmp` step first; or the post-reconciliation snapshot (§5.2) was
+  the `cmp` step first; (3) the post-reconciliation snapshot (§5.2) was
   built incorrectly, or applied to the wrong copy), re-run §5.4, and
   only proceed once clean.
 - **§7.7's boundary check finds a read-scope violation** for either
@@ -936,14 +1280,15 @@ checklist:
 | Seed + fork | `git clone`, `cp -r` ×2 | `<scratch>/ledgerkit-{seed,control,treatment}` |
 | Equivalence check | `diff -rq`, `git rev-parse HEAD` in both | `planning/reference-projects/ledgerkit/<NN>-stage-89c-fixture-equivalence.md` |
 | Pre-reconciliation snapshot | `cp -r planning/knowledge/balance-from-spec`, `cp -r planning/contracts/balance-from-spec` | `<scratch>/knowledge-pre{,-contracts}` |
-| Post-reconciliation snapshot | §5.2's real detect→verify→apply sequence against a 4th scratch Ledgerkit clone | `<scratch>/knowledge-post{,-contracts}` |
-| Packet generation | `get_context_packet("CL-BFS-004", repo_root=<reference clone>)` against both roots | `control-packet.json`, `treatment-packet.json` |
-| Contamination check | `diff <(jq -S .) <(jq -S .)` | inline in the fixture-equivalence report or a sibling file |
-| Arm dispatch | 2 `general-purpose` Agent calls (§7) | `<scratch>/{control,treatment}-report.md` |
-| Boundary check | tool-call audit per arm | `planning/reference-projects/ledgerkit/<NN>-stage-89c-{control,treatment}-boundary-check.md` |
-| Acceptance test | `tests/test_combined_section_acceptance.py` (§6, pinned) applied per arm | `<scratch>/ledgerkit-verify-{control,treatment}` |
-| Oracle run | `oracle.run_pytest_check` + full `pytest -q` per verify clone | `OracleResult` files under a disposable `results/` dir (never the real contract's own) |
-| Evaluator dispatch | 1 `context-evaluator` Agent call, blinded | `planning/reference-projects/ledgerkit/<NN>-stage-89c-evaluation.md` |
+| Reference clone + post-reconciliation snapshot | §5.2's real detect→verify→apply sequence against one single `ledgerkit-reference` scratch clone (the pinned overlapping-pattern test added here, never a separate untouched clone — §5.2's digest-compatibility fix) | `<scratch>/ledgerkit-reference`, `<scratch>/knowledge-post{,-contracts}` |
+| Packet generation | `get_context_packet("CL-BFS-004", repo_root=<scratch>/ledgerkit-reference)` against both project roots, via explicit per-call `cd` subshells (§5.3) | `control-packet.json`, `treatment-packet.json` |
+| Contamination check | `diff <(jq -S .) <(jq -S .)` against the explicit four-category allowlist (§5.4) | inline in the fixture-equivalence report or a sibling file |
+| Arm dispatch | 2 `general-purpose` Agent calls (§7), **both** now receiving their own packet file | `<scratch>/{control,treatment}-report.md` |
+| Boundary check | tool-call audit per arm, including a check that neither arm accessed the other's own clone/report/packet | `planning/reference-projects/ledgerkit/<NN>-stage-89c-{control,treatment}-boundary-check.md` |
+| Acceptance test | `tests/test_combined_section_acceptance.py` (§6, pinned, 11 methods) applied per arm | `<scratch>/ledgerkit-verify-{control,treatment}` |
+| Oracle run | `oracle.evaluate_check` (primary scope, durable `OracleResult`, §6 step 5) + full `pytest -q` per verify clone | `OracleResult` files under a disposable `results/` dir (never the real contract's own) |
+| Neutral evaluator materials | copy each arm's own packet/report/verify-clone into randomly-assigned `draft-1`/`draft-2` directories; allocation key kept separate (§8) | `<scratch>/draft-{1,2}/...`, `<scratch>/allocation-key.txt` (never given to the evaluator) |
+| Evaluator dispatch | 1 `context-evaluator` Agent call, allocation-blinded via the neutral `draft-1`/`draft-2` material only | `planning/reference-projects/ledgerkit/<NN>-stage-89c-evaluation.md` |
 | Procedural audit | 1 `release-phase-auditor` Agent call | appended section, evaluator report or its own file |
 | Final report | §9's schema | `planning/reference-projects/ledgerkit/<NN>-stage-89c-task-b-controlled-comparison.md` |
 
@@ -1011,8 +1356,8 @@ one verdict:
    CodeCompass canonical knowledge are confirmed untouched (§12);
    `planning/reference-projects/ledgerkit/`'s own report set (§9/§11)
    exists and is internally consistent; a fresh `release-phase-
-   auditor` pass confirms this plan's own procedure was followed
-   (§8.5).
+   auditor` pass confirms this plan's own procedure was followed,
+   including the blinding-disclosure audit (§8.6).
 2. **A valid, completed Task B evaluation** (§8 of Phase 89's own
    plan file, `planning/phase-89-incremental-knowledge-documentation-
    reconciliation.md`): the pre-registered criteria (§2 above,

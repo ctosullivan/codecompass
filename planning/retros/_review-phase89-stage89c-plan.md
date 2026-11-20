@@ -444,3 +444,336 @@ three findings from the original review are now genuinely closed to
 the standard that review asked for; §11's unchanged "against both
 roots" phrasing is noted above as a non-issue, not a new observation
 requiring further action.
+
+---
+
+## 2026-11-20 — Independent review of the SECOND amendment (control-arm
+packet omission / reference-checkout digest incompatibility /
+`OracleResult` API correction)
+
+Dispatched separately from both reviews above, to independently
+re-derive and skeptically re-check the three further, distinct defects
+a second dispatch ("Phase 89C Plan Corrections and Independent
+Re-Review") found and fixed in the working tree — none of which the
+first review (immediately above) was scoped to catch. Read-only toward
+Ledgerkit and this project's real canonical knowledge throughout: every
+mutation below ran inside disposable scratch clones/copies under a
+session-scratch directory, deleted before this report was written.
+`~/projects/ledgerkit` was confirmed clean at
+`a7740fd04fe1814d2a557bfcb67a9a775a4a22f9` both before and after this
+review; `planning/knowledge/balance-from-spec/` and `planning/
+contracts/balance-from-spec/` were read but never written (`git status
+--porcelain` against both paths empty before and after). This project's
+own working tree showed only the expected pre-existing uncommitted
+changes (`CHANGELOG.md`, `planning/ROADMAP.md`, the plan file itself)
+both before and after.
+
+### VERDICT: READY WITH NON-BLOCKING OBSERVATIONS
+
+All three defects this amendment claims to fix are genuinely fixed —
+each independently reproduced from scratch against real disposable
+state, not merely re-read in the plan's own prose. No new defect was
+introduced by these specific edits. One pre-existing, non-blocking
+observation (already flagged, unrelated to this amendment) is repeated
+below for completeness; nothing here is new or blocking.
+
+---
+
+### Defect 1 — control-arm packet omission (§4.1/§7/§8) — FIXED, confirmed by direct reading
+
+Read §4.1's equivalence table, §7.2/§7.3 (arm-dispatch prompts), and
+§8.2-§8.3 directly, not just the amendment's own framing text.
+Confirmed:
+
+- §4.1's "Tool access" row now reads, for **control**: "`Read`, `Grep`,
+  `Glob`, `Bash` ... **plus the one pre-generated `control-packet.json`
+  context packet** ..."; for **treatment**: "identical, **plus** the
+  one pre-generated `treatment-packet.json` context packet ...
+  **neither** arm gets live `codecompass` CLI access ... **Both arms
+  receive a packet, via the identical delivery method and the identical
+  one-sentence framing**." Both arms genuinely receive a packet; the
+  only intended difference is which file.
+- §7.2 (control dispatch) and §7.3 (treatment dispatch) use the
+  **identical** symmetric sentence: *"Attached is a CodeCompass context
+  packet for the knowledge record relevant to this task. You may use
+  it, ignore it, or verify its contents against the source."* Neither
+  prompt uses a longer or differently-worded sentence for one arm only
+  (the defect the amendment's own text says an earlier draft had).
+  Neither prompt tells its own arm whether its packet is "control" or
+  "treatment," or that a differently-sourced packet exists for the
+  other arm.
+- §7.4's observable-research-trace requirement no longer lets either
+  arm write "n/a" — both are now required to report whether and how
+  their own packet informed the dedup decision.
+- §7.7's boundary check now audits, for **both** arms, that neither read
+  the other arm's clone/report/packet — not scoped to the treatment arm
+  only as an earlier draft's text implied.
+- Grepped the whole file for every literal `"control"`/`"treatment"`
+  occurrence (`grep -n '"control"\|"treatment"'`): every hit is in this
+  plan's own internal/author-facing prose (§5.1/§5.2's section headers,
+  §1's own narration, §7.2's "never told ... 'control'" sentence, §8.2's
+  blinding-hardening narration) — never inside text that would actually
+  reach either arm's own dispatch prompt or the evaluator's own
+  material. Confirms the fix is genuine, not cosmetic.
+
+**Independent judgment**: this is the correct fix for the defect as
+described, and it is actually present in the committed working-tree
+text, not merely asserted in the amendment's own narration of itself.
+
+### Defect 2 — reference-checkout digest incompatibility (§5.2/§5.3/§5.4) — FIXED, confirmed by direct, live reproduction of both the fix and the original bug
+
+This is the one claim this dispatch most needed hands-on verification
+for, since it concerns a mechanism (`oracle.compute_tree_digest`/
+`evaluate_result_precedence`) whose failure mode is silent by
+construction. Built a disposable project-pre/project-post pair (copies
+of the real `planning/knowledge/balance-from-spec`/`planning/contracts/
+balance-from-spec`, real paths never touched), and two disposable
+Ledgerkit scratch copies pinned at the real, current
+`a7740fd04fe1814d2a557bfcb67a9a775a4a22f9`: one (`ledgerkit-reference`)
+with the pinned `test_section_accounts_overlapping_patterns_no_
+double_count` test added (confirmed passing directly via its own
+`.venv/bin/pytest` first), one (`ledgerkit-pristine`) left untouched.
+
+Ran the real pipeline against `ledgerkit-reference`, exactly as §5.2
+specifies: re-synced `tests/test_reports.py`'s content hash into that
+clone's own `context-graph.db` (direct sqlite3 `UPDATE`, the established
+lighter-weight technique) → `codecompass knowledge detect-changes
+balance-from-spec --repo-root ledgerkit-reference --probe-coverage
+--json` → `"newly_coverable": [{"check_id":
+"overlapping-account-patterns-no-double-count", "claim_id":
+"CL-BFS-004"}]` → `codecompass knowledge verify-changes` → a one-item
+manifest, `record_id = "CL-BFS-004"`, `contributing_labels =
+["newly_covered"]`, citing a real fresh PASS `OracleResult` → accepted
+and `codecompass knowledge apply`'d → `CL-BFS-004.yaml`'s
+`evidence_support_state` → `supported`, `supporting_evidence` →
+`[EV-BFS-001, EV-BALANCEFROMS-004]`, and the new `EV-BALANCEFROMS-004`
+record is genuinely `evidence_kind: test`. Confirmed the Claim's own
+`statement` text is unchanged byte-for-byte modulo YAML folding
+(`" ".join(text.split())`-normalised, identical word-for-word between
+pre/post copies) — exactly as §5.2 claims.
+
+Generated both packets via §5.3's now-corrected procedure (explicit
+per-call `cd` subshells against `$PROJECT_ROOT_PRE`/`$PROJECT_ROOT_POST`,
+both against the single shared `ledgerkit-reference` as
+`--repo-root`). `cmp` reported a genuine difference, as required. Ran
+the exact §5.4 check (`diff <(jq -S . control-packet.json) <(jq -S .
+treatment-packet.json)`); the real output was:
+
+```
+30c30
+<               "knowledge_revision": "ca41ecd3de586bd22a1b3acec374bde8897858b90b6189eb2251bfe393a3ab29",
+---
+>               "knowledge_revision": "4c2653a119b05ef9d37405a6f7f9b57e15a6d8b0aad60fba5a3e325beae45e46",
+32c32
+<                 "3 required scope(s) have no passing evidence at all"
+---
+>                 "2 required scope(s) have no passing evidence at all"
+82a83,102
+>           },
+>           {
+>             "authority": "scoped_verification",
+>             ... (EV-BALANCEFROMS-004's own item, consistency, summary) ...
+>             "id": "EV-BALANCEFROMS-004",
+>             "kind": "evidence",
+>             "summary": "A real, independently executed oracle run of the
+>             newly-coverable check 'overlapping-account-patterns-no-double-count'
+>             passes (newly_covered)."
+```
+
+This is **exactly** the three differences §5.4's allowlist names
+(category 1: the new `EV-BALANCEFROMS-004` item; category 2: `CL-BFS-
+004`'s own `knowledge_revision`; category 3: `reasons`' embedded count,
+3 → 2) and nothing else. Independently confirmed category 4 holds:
+`CL-BFS-004`'s own `consistency.status` ("unconfirmed") and
+`consistency.evidence_currency` ("absent") are byte-identical in both
+packets; its own `summary` field is byte-identical; both packets' own
+top-level `gaps` arrays are empty in both.
+
+**Then reproduced the original bug directly**, to confirm the fix
+actually matters and isn't fixing a phantom problem: re-ran the
+identical §5.3 packet-generation calls with `--repo-root` pointed at
+the untouched `ledgerkit-pristine` clone instead (same `project-post`
+knowledge snapshot, already correctly reconciled — this isolates the
+packet-*generation*-time live-reconfirmation failure from the
+reconciliation step itself). Result: `CL-BFS-004`'s own
+`consistency.reasons` read `["3 required scope(s) have no passing
+evidence at all"]` in **both** the pre- and post-Task-A packets —
+wrongly stuck at 3, exactly as the plan's own corrected §5.2/§10 text
+predicts (the newly-cited `EV-BALANCEFROMS-004`'s `OracleResult`
+evaluates `INVALID` against a checkout whose `test_input_digest` for
+`tests/test_reports.py` doesn't match what was recorded, so
+`matched_pass` never flips and the gap count never drops). Confirmed
+the sharper, more dangerous part of the claim too: a `diff <(jq -S .)
+<(jq -S .)` between these two *broken* packets still shows real
+differences (the new `EV-BALANCEFROMS-004` item is still present in the
+treatment packet; `knowledge_revision` still differs, since that's a
+hash of the Claim file's own content, unrelated to live
+re-confirmation) — so a mechanical check that only asserts "no
+unexpected differences outside the allowlist" would see nothing wrong
+and **wrongly pass**, exactly as §5.4 item 3 and §10's failure-handling
+bullet now explicitly warn. This is precisely why §5.4's own check must
+positively assert that `reasons` *differs*, not merely that nothing
+unexpected appears — confirmed this requirement is pulling real weight,
+not decorative caution.
+
+**One disclosed methodological divergence in my own reproduction, not a
+plan defect**: I built `ledgerkit-reference`/`ledgerkit-pristine` via
+`cp -r` with `.git` subsequently removed, rather than the `git clone`
+§4.2 specifies for the seed clone (§5.2 itself does not pin a mechanism
+for `$LK_REF` specifically). Because of this, `_repo_revision`'s own git
+probe found no repository at all and fell back to its documented
+"working tree (tested_subject_digest=..., test_input_digest=...)"
+branch, so my own `EV-BALANCEFROMS-004.repository_revision` reads
+`"working tree (...)"` rather than the plan's own stated `"a7740fd0...+dirty
+(...)"`. This is a direct, foreseen consequence of `source_reconciliation.
+_repo_revision`'s own documented behavior (confirmed by reading the
+function: `git rev-parse HEAD` failing/returning nonzero falls through
+to the same `"working tree (...)"` string whether that's because of an
+`OSError` or a plain non-zero exit) and affects only this one cosmetic
+string's exact spelling — every structural claim under test (digest
+mismatch → `INVALID`, the fix, the allowlist categories, `reasons`'
+count) reproduced identically regardless. Noted for transparency, not
+as a finding.
+
+### Defect 3 — `OracleResult` API correction (§6 step 5) — FIXED, confirmed by direct, live reproduction of the exact corrected sequence
+
+Confirmed by direct source read (`src/codecompass/oracle.py`) that the
+plan's own characterization of the bug is accurate: `run_pytest_check`
+(line 570) really does return `tuple[str, str | None, str]` — bare
+`(outcome, invalid_reason, raw_output_text)` — with no `OracleResult`,
+no digests, no persistence of any kind; `evaluate_check` (line 833) is
+the real API that executes the check internally and returns a
+fully-populated `OracleResult` (`run_id`, `tested_subject_digest`,
+`test_input_digest`, `oracle_contract_content_hash`, `outcome`,
+`raw_output_ref`/`raw_output_sha256`). `write_oracle_result` (line 425),
+`parse_oracle_result` (line 341), and `evaluate_result_precedence`
+(line 978) all exist with the exact signatures the corrected §6 step 5
+names.
+
+Reproduced the corrected sequence directly: implemented
+`ReportSpec.with_combined_section` for real (union `accounts`/
+`exclude`, same-invert/same-depth check raising `ValueError`, zero-
+section raise, no mutation) in a disposable Ledgerkit scratch copy;
+added the plan's own pinned, unmodified §6 `tests/
+test_combined_section_acceptance.py` (all 11 methods) verbatim; wrote a
+disposable `STAGE89C-TASKB-VERIFY` oracle-contract.yaml naming only
+`combined-section-no-double-count`; ran:
+
+```
+result = oracle.evaluate_check(contract, check, contract_path=..., repo_root=..., raw_output_dir=...)
+# -> outcome="PASS", run_id="20261120T144306375671Z-8173f249",
+#    tested_subject_digest/test_input_digest/oracle_contract_content_hash all real, non-empty hashes
+oracle.write_oracle_result(result_path, result)
+reparsed = oracle.parse_oracle_result(result_path)   # reparsed.outcome == result.outcome: True
+effective, reason = oracle.evaluate_result_precedence(reparsed, contract, check, contract_path=..., repo_root=...)
+# -> ("PASS", None)
+```
+
+Exactly as the plan's own text claims. Separately ran `pytest
+tests/test_combined_section_acceptance.py -v`: all 11 tests pass
+against the correct implementation, and the full pre-existing Ledgerkit
+suite (`pytest -q`, 946 tests) shows no regression.
+
+**Acceptance-test completeness gap (the four new §6 methods) — also
+independently confirmed discriminating.** Built a second, deliberately
+"incorrect" implementation that unions `accounts` but never touches
+`exclude` at all. Result: `pytest tests/test_combined_section_
+acceptance.py -v` → **exactly one failure**,
+`test_union_of_exclude_patterns` (`AssertionError: Items in the second
+set but not the first: 'coffee'`), all other 10 methods still pass. Ran
+the full suite against this buggy implementation too (`pytest -q`): 1
+failed, 945 passed — confirming the new test fails *specifically and
+only* the scenario it's designed to catch, not some unrelated
+collateral breakage. This matches the amendment's own claim in §6's
+comment block precisely.
+
+---
+
+### Verified correct — the remaining items this dispatch was asked to check
+
+- **§3 (Task B's pinned signature/scope/behaviour) is byte-for-byte
+  unchanged by this amendment.** Confirmed via `git diff HEAD`'s own
+  hunk boundaries: the diff jumps from a hunk ending before §3's own
+  text to one starting well after §4 begins — no hunk touches any line
+  inside §3. Independently re-read §3 in the current working-tree file
+  anyway: the pinned signature, the union/invert/depth-raise rules, the
+  "performs no aggregation" sentence, and the honest-fallback framing
+  are all identical to what the first review (above) already verified.
+- **The pre-registration
+  (`planning/retros/phase-89-ledgerkit-two-task-demonstration.md`) is
+  unmodified**: `git log --oneline` on that file shows exactly one
+  commit (`7dcae8f`), `git status --porcelain` on it is empty. Re-read
+  it in full and cross-checked the plan's §2 six invariants against it
+  line by line again, independently of the first review's own earlier
+  pass — still faithful, including the exact "A tie does not satisfy
+  it" wording and the honest-disclosure framing in §3/§8 of the
+  pre-registration.
+- **§8's blinding hardening genuinely covers filenames, clone paths, and
+  report filenames, not only the framing sentence.** §8.2's text
+  explicitly specifies `draft-N-packet.json`, `draft-N-report.md`, and
+  `draft-N-verify/` (a copy of that arm's own `ledgerkit-verify-*`
+  clone) as the neutral material the evaluator receives, with the
+  allocation key withheld in a separate file. §8.3 states the one real
+  limitation plainly — Evidence content itself (e.g.
+  `EV-BALANCEFROMS-004` existing in only one draft's packet) may reveal
+  which snapshot is more recent, and this is **not** concealed, since
+  the evaluator needs it to do its job — explicitly declining to
+  overclaim "perfectly blinded," only "allocation-blinded where
+  practically achievable." This is honest, not overclaiming.
+- **Section cross-references are internally consistent after the
+  renumbering.** §8 now has six numbered items (the hardened blinding
+  step inserted as item 2 pushed the former items 2-5 to 3-6); both
+  citing locations — §9's "Outcome 2" ("cites the release-phase-
+  auditor's own §8.6 report") and §14 item 1 ("including the
+  blinding-disclosure audit (§8.6)") — were updated together and both
+  correctly point at item 6, the release-phase-auditor dispatch that
+  now also does the blinding-disclosure grep. No stale `§8.5` reference
+  remains anywhere in the file (grepped).
+- **No Stage 89C implementation, Task B execution, or controlled
+  comparison was run by this amendment.** §0's status text explicitly
+  states the plan remains a planning deliverable, not authorised for
+  execution by either dispatch; nothing in the diff adds any claim of
+  having actually dispatched either development arm or the
+  context-evaluator for real. (My own reproduction work above ran
+  entirely in disposable scratch, outside both repositories, exactly as
+  the dispatch instructed, and was deleted before this report was
+  written — it is this review's own verification activity, not Stage
+  89C execution.)
+- **Success criterion, scoring scales, and the tie rule are unchanged.**
+  Grepped the full `git diff` for any hunk touching §2 invariant 5, §8's
+  verdict-production instructions, §9's "Outcome 3" gate text, or §10's
+  "Tie" bullet — none appear in the diff; all are verbatim the same as
+  the first review already verified. The PASS/PASS WITH GAPS/FAIL and
+  LOW/MODERATE/HIGH three-point scales and "never 'partially met'" / "do
+  not search for a tie-breaking metric" language are untouched by this
+  amendment.
+- **No new problems introduced by these specific edits.** Checked
+  variable-naming consistency between `$LK_REF`/`$KN`/`$CT` (§5.2) and
+  `PROJECT_ROOT_PRE`/`PROJECT_ROOT_POST`/`REPO_ROOT_REFERENCE` (§5.3) —
+  consistent and non-colliding, and I exercised them literally via real
+  shell variables in my own reproduction with no ambiguity. Grepped for
+  leftover "fourth clone"/"fifth clone"/"pristine" references outside
+  the deliberate "an earlier draft used..." explanatory passages — none
+  found; every occurrence is either explaining the old bug or is my own
+  reproduction's intentional negative-control clone. §11's summary table
+  was updated consistently with §5.2/§5.3/§6/§8's own corrected text (no
+  stale row left describing the old 4-clone/`run_pytest_check`-only
+  procedure).
+
+### Summary
+
+All three defects named in this dispatch — control-arm packet omission,
+reference-checkout digest incompatibility, and the `OracleResult`
+creation API — are genuinely fixed in the current working-tree text,
+each confirmed by direct, independent reproduction against real
+disposable scratch state (not by re-reading the plan's own narration of
+its own fixes). The one originally-bugged behavior (packets silently
+staying indistinguishable, or — worse — superficially "clean" under a
+naive contamination check, when a pristine reference checkout is used)
+was itself reproduced and confirmed to actually occur absent the fix,
+establishing the fix is substantive rather than cosmetic. No new defect
+was introduced by these specific edits. Combined with the first
+review's own already-confirmed "READY WITH NON-BLOCKING OBSERVATIONS"
+re-check (above), this plan remains **READY WITH NON-BLOCKING
+OBSERVATIONS** — no outstanding blocking finding against the plan as it
+now stands in the working tree.
